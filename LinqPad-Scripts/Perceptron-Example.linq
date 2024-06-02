@@ -12,6 +12,10 @@
   <Namespace>System.Drawing</Namespace>
 </Query>
 
+// followed along with https://www.youtube.com/watch?v=ntKn5TPHHAk&list=PLRqwX-V7Uu6aCibgK1PTWWu9by6XFdCfh&index=2
+// press a button (not q) to see the brain make guesses
+// every time you press it, it will train and improve
+
 void Main()
 {
 	float[] inputs = { 1, 0.0f };
