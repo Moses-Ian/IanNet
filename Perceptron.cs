@@ -19,7 +19,8 @@ namespace IanNet
             ArrayView1D<float, Stride1D.Dense>, 
             ArrayView1D<float, Stride1D.Dense>, 
             ArrayView1D<float, Stride1D.Dense>> forwardKernel;
-        
+        public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> binaryActivationKernel;
+
         // the memory on the gpu
         private MemoryBuffer1D<float, Stride1D.Dense> weightsBuffer;
         private MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer;
@@ -47,12 +48,13 @@ namespace IanNet
             device = context.GetPreferredDevice(forceCPU).CreateAccelerator(context);
 
             // convert our functions into kernels
-            fillRandomKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(FillRandom);
+            fillRandomKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(fillRandom);
             forwardKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D, 
                 ArrayView1D<float, Stride1D.Dense>, 
                 ArrayView1D<float, Stride1D.Dense>, 
                 ArrayView1D<float, Stride1D.Dense>>(forward);
+            binaryActivationKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(binaryActivation);
 
             // allocate memory on the gpu
             weightsBuffer = device.Allocate1D<float>(weights.Length);
@@ -69,25 +71,18 @@ namespace IanNet
             // allocates a size 1 float array for the output
             outputsBuffer = device.Allocate1D<float>(1);
 
-            // run the kernel
+            // run the kernels
             forwardKernel(weights.Length, inputsBuffer, weightsBuffer, outputsBuffer);
+            binaryActivationKernel(weights.Length, outputsBuffer);
 
             // read the results from the gpu
             float[] outputs = outputsBuffer.GetAsArray1D();
             float output = outputs[0];
 
-            return Activation(output);
+            return output;
         }
 
-        public float Activation(float n)
-        {
-            if (n < 0)
-                return -1;
-            else
-                return 1;
-        }
-
-        private static void FillRandom(Index1D node, ArrayView1D<float, Stride1D.Dense> output)
+        private static void fillRandom(Index1D node, ArrayView1D<float, Stride1D.Dense> output)
         {
             // Create a random number generator for each thread
             // seed it with the index (but not 0)
@@ -103,6 +98,14 @@ namespace IanNet
             for (var i = 0; i < inputs.Length; i++)
                 sum += inputs[i] * weights[i];
             output[node] = sum;
+        }
+
+        private static void binaryActivation(Index1D node, ArrayView1D<float, Stride1D.Dense> output)
+        {
+            if (output[node] < 0)
+                output[node] = -1;
+            else
+                output[node] = 1;
         }
     }
 }
