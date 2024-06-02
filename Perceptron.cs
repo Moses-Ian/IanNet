@@ -13,6 +13,7 @@ namespace IanNet
         public Context context;
         public Accelerator device;
         public float[] weights = new float[2];
+        public static readonly float learningRate = 0.1f;
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> fillRandomKernel;
         public Action<
             Index1D, 
@@ -20,11 +21,17 @@ namespace IanNet
             ArrayView1D<float, Stride1D.Dense>, 
             ArrayView1D<float, Stride1D.Dense>> forwardKernel;
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> binaryActivationKernel;
+        public Action<
+            Index1D, 
+            ArrayView1D<float, Stride1D.Dense>, 
+            ArrayView1D<float, Stride1D.Dense>, 
+            ArrayView1D<float, Stride1D.Dense>>updateWeightsKernel;
 
         // the memory on the gpu
         private MemoryBuffer1D<float, Stride1D.Dense> weightsBuffer;
         private MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer;
         private MemoryBuffer1D<float, Stride1D.Dense> outputsBuffer;
+        private MemoryBuffer1D<float, Stride1D.Dense> errorsBuffer;
 
         public Perceptron()
         {
@@ -55,6 +62,11 @@ namespace IanNet
                 ArrayView1D<float, Stride1D.Dense>, 
                 ArrayView1D<float, Stride1D.Dense>>(forward);
             binaryActivationKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(binaryActivation);
+            updateWeightsKernel = device.LoadAutoGroupedStreamKernel<
+                Index1D, 
+                ArrayView1D<float, Stride1D.Dense>, 
+                ArrayView1D<float, Stride1D.Dense>, 
+                ArrayView1D<float, Stride1D.Dense>>(updateWeights);
 
             // allocate memory on the gpu
             weightsBuffer = device.Allocate1D<float>(weights.Length);
@@ -82,6 +94,27 @@ namespace IanNet
             return output;
         }
 
+        // this will need to be improved as we scale
+        public void Train(float[] inputs, float target)
+        {
+            // get the guess
+            float guess = Forward(inputs);
+
+            // get the error
+            float error = target - guess;
+            float[] errors = new float[1];
+            errors[0] = error;
+
+            // allocate the error to the gpu
+            errorsBuffer = device.Allocate1D<float>(errors);
+
+            // update the weights
+            updateWeightsKernel(weights.Length, inputsBuffer, weightsBuffer, errorsBuffer);
+
+            // get the new weights
+            weights = weightsBuffer.GetAsArray1D();
+        }
+
         private static void fillRandom(Index1D node, ArrayView1D<float, Stride1D.Dense> output)
         {
             // Create a random number generator for each thread
@@ -103,9 +136,17 @@ namespace IanNet
         private static void binaryActivation(Index1D node, ArrayView1D<float, Stride1D.Dense> output)
         {
             if (output[node] < 0)
-                output[node] = -1;
+                output[node] = 0.25f;
             else
                 output[node] = 1;
+        }
+
+        private static void updateWeights(Index1D node, ArrayView1D<float, Stride1D.Dense> inputs, ArrayView1D<float, Stride1D.Dense> weights, ArrayView1D<float, Stride1D.Dense> errors)
+        {
+            for (int i = 0; i < weights.Length; i++)
+            {
+                weights[i] += errors[node] * inputs[i] * learningRate;
+            }
         }
     }
 }
