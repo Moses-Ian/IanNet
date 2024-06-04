@@ -13,16 +13,19 @@ namespace IanNet
         public Context context;
         public Accelerator device;
         public float[] weights = new float[2];
+        public float[] biases = new float[1];
         public static readonly float learningRate = 0.1f;
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> fillRandomKernel;
         public Action<
             Index1D, 
             ArrayView1D<float, Stride1D.Dense>, 
             ArrayView1D<float, Stride1D.Dense>, 
+            ArrayView1D<float, Stride1D.Dense>, 
             ArrayView1D<float, Stride1D.Dense>> forwardKernel;
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> binaryActivationKernel;
         public Action<
             Index1D, 
+            ArrayView1D<float, Stride1D.Dense>, 
             ArrayView1D<float, Stride1D.Dense>, 
             ArrayView1D<float, Stride1D.Dense>, 
             ArrayView1D<float, Stride1D.Dense>>updateWeightsKernel;
@@ -32,6 +35,7 @@ namespace IanNet
         private MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer;
         private MemoryBuffer1D<float, Stride1D.Dense> outputsBuffer;
         private MemoryBuffer1D<float, Stride1D.Dense> errorsBuffer;
+        private MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer;
 
         public Perceptron()
         {
@@ -39,9 +43,11 @@ namespace IanNet
 
             // now that the gpu is initialized, we can run the kernel
             fillRandomKernel(weights.Length, weightsBuffer);
+            fillRandomKernel(biases.Length, biasesBuffer);
 
             // get the data from the gpu
             weights = weightsBuffer.GetAsArray1D();
+            biases = biasesBuffer.GetAsArray1D();
         }
 
         public void InitGPU(bool forceCPU = false)
@@ -60,16 +66,19 @@ namespace IanNet
                 Index1D, 
                 ArrayView1D<float, Stride1D.Dense>, 
                 ArrayView1D<float, Stride1D.Dense>, 
+                ArrayView1D<float, Stride1D.Dense>, 
                 ArrayView1D<float, Stride1D.Dense>>(forward);
             binaryActivationKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(binaryActivation);
             updateWeightsKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D, 
                 ArrayView1D<float, Stride1D.Dense>, 
                 ArrayView1D<float, Stride1D.Dense>, 
+                ArrayView1D<float, Stride1D.Dense>, 
                 ArrayView1D<float, Stride1D.Dense>>(updateWeights);
 
             // allocate memory on the gpu
             weightsBuffer = device.Allocate1D<float>(weights.Length);
+            biasesBuffer = device.Allocate1D<float>(biases.Length);
         }
 
         public float Forward(float[] inputs)
@@ -84,7 +93,7 @@ namespace IanNet
             outputsBuffer = device.Allocate1D<float>(1);
 
             // run the kernels
-            forwardKernel(weights.Length, inputsBuffer, weightsBuffer, outputsBuffer);
+            forwardKernel(weights.Length, inputsBuffer, weightsBuffer, biasesBuffer, outputsBuffer);
             binaryActivationKernel(weights.Length, outputsBuffer);
 
             // read the results from the gpu
@@ -109,27 +118,29 @@ namespace IanNet
             errorsBuffer = device.Allocate1D<float>(errors);
 
             // update the weights
-            updateWeightsKernel(weights.Length, inputsBuffer, weightsBuffer, errorsBuffer);
+            updateWeightsKernel(weights.Length, inputsBuffer, weightsBuffer, biasesBuffer, errorsBuffer);
 
             // get the new weights
             weights = weightsBuffer.GetAsArray1D();
+            biases = biasesBuffer.GetAsArray1D();
         }
 
-        private static void fillRandom(Index1D node, ArrayView1D<float, Stride1D.Dense> output)
+        private static void fillRandom(Index1D weightIndex, ArrayView1D<float, Stride1D.Dense> weights)
         {
             // Create a random number generator for each thread
             // seed it with the index (but not 0)
-            var random = new XorShift64Star((ulong)node+1);
+            var random = new XorShift64Star((ulong)weightIndex+1);
 
             // Generate a random number between -1 and 1
-            output[node] = random.NextFloat() * 2 - 1;
+            weights[weightIndex] = random.NextFloat() * 2 - 1;
         }
 
-        private static void forward(Index1D node, ArrayView1D<float, Stride1D.Dense> inputs, ArrayView1D<float, Stride1D.Dense> weights, ArrayView1D<float, Stride1D.Dense> output)
+        private static void forward(Index1D node, ArrayView1D<float, Stride1D.Dense> inputs, ArrayView1D<float, Stride1D.Dense> weights, ArrayView1D<float, Stride1D.Dense> biases, ArrayView1D<float, Stride1D.Dense> output)
         {
             float sum = 0;
             for (var i = 0; i < inputs.Length; i++)
                 sum += inputs[i] * weights[i];
+            sum += biases[node];
             output[node] = sum;
         }
 
@@ -141,12 +152,13 @@ namespace IanNet
                 output[node] = 1;
         }
 
-        private static void updateWeights(Index1D node, ArrayView1D<float, Stride1D.Dense> inputs, ArrayView1D<float, Stride1D.Dense> weights, ArrayView1D<float, Stride1D.Dense> errors)
+        private static void updateWeights(Index1D node, ArrayView1D<float, Stride1D.Dense> inputs, ArrayView1D<float, Stride1D.Dense> weights, ArrayView1D<float, Stride1D.Dense> biases, ArrayView1D<float, Stride1D.Dense> errors)
         {
             for (int i = 0; i < weights.Length; i++)
             {
                 weights[i] += errors[node] * inputs[i] * learningRate;
             }
+            biases[node] += errors[node] * 1.0f * learningRate;
         }
     }
 }
