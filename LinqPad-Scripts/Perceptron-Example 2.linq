@@ -23,13 +23,14 @@ void Main()
 	try
 	{
 		Perceptron brain = new Perceptron();
+		Console.WriteLine(brain.biases[0]);
 		float output = brain.Forward(inputs);
 		Console.WriteLine(output);
 		
 		ShowAllData();
 		Point[] trainingData = ShowTrainingData();
 		
-		while(CvInvoke.WaitKey(0) != 'q')
+		while(CvInvoke.WaitKey(1) != 'q')
 		{
 			Point[] guesses = ShowForwards(brain, trainingData);
 		
@@ -47,7 +48,12 @@ void Main()
 }
 
 public int pixelRadius = 2;
-	
+public int numberOfTrainingPoints = 50;
+
+public bool	ComparisonFunction(float x, float y)
+{
+	return y > 3*x-100;
+}
 
 // You can define other methods, fields, classes and namespaces here
 public void DoTheTraining(Perceptron brain, Point[] guesses)
@@ -100,7 +106,7 @@ public Point[] ShowTrainingData()
 {
 	// training data
 	float[,] data = CreateArray();
-	Point[] points = CreateTrainingData(data, 20);
+	Point[] points = CreateTrainingData(data, numberOfTrainingPoints);
 	float[] flattened = data.Cast<float>().ToArray();
 	Mat canvas = new Mat(new Size(data.GetLength(0), data.GetLength(1)), DepthType.Cv32F, 1);
 	
@@ -164,7 +170,7 @@ public float[,] CreateArray()
 
 public float GetLabel(float x, float y)
 {
-	if (x < y)
+	if (ComparisonFunction(x, y))
 		return 1f;
 	else
 		return 0.25f;
