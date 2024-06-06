@@ -16,7 +16,17 @@ void Main()
 {
 	try
 	{
-		NeuralNetwork brain = new NeuralNetwork(3, 3, 1);
+		NeuralNetwork brain = new NeuralNetwork(2, 2, 1);
+		
+		brain.GetWeightsFromGpu();
+		PrintWeights(brain.hiddenWeights, "hidden weights");
+		PrintWeights(brain.hiddenBiases, "hidden biases");
+		PrintWeights(brain.outputWeights, "output weights");
+		PrintWeights(brain.outputBiases, "output biases");
+		
+		float[] inputs = { 0, 1 };
+		float[] outputs = brain.Forward(inputs);
+		Console.WriteLine(outputs[0]);
 	}
 	catch (Exception e)
 	{
@@ -26,3 +36,19 @@ void Main()
 	}
 }
 
+public void PrintWeights(float[] weights, string name=null)
+{
+	if (name != null)
+		Console.WriteLine(name);
+	for (int i=0; i<weights.Length; i++)
+		Console.WriteLine(weights[i]);
+}
+
+public void PrintWeights(float[,] weights, string name=null)
+{
+	if (name != null)
+		Console.WriteLine(name);
+	for (int i=0; i<weights.GetLength(0); i++)
+		for (int j=0; j<weights.GetLength(1); j++)
+			Console.WriteLine(weights[i,j]);
+}
