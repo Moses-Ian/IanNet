@@ -18,11 +18,11 @@ void Main()
 	{
 		NeuralNetwork brain = new NeuralNetwork(2, 2, 1);
 		
-		brain.GetWeightsFromGpu();
-		PrintWeights(brain.hiddenWeights, "hidden weights");
-		PrintWeights(brain.hiddenBiases, "hidden biases");
-		PrintWeights(brain.outputWeights, "output weights");
-		PrintWeights(brain.outputBiases, "output biases");
+		//brain.GetWeightsFromGpu();
+		//PrintWeights(brain.hiddenWeights, "hidden weights");
+		//PrintWeights(brain.hiddenBiases, "hidden biases");
+		//PrintWeights(brain.outputWeights, "output weights");
+		//PrintWeights(brain.outputBiases, "output biases");
 		
 		float[] inputs = { 0, 1 };
 		float[] outputs = brain.Forward(inputs);

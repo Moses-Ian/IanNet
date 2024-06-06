@@ -21,8 +21,11 @@ namespace IanNet
         public Context context;
         public Accelerator device;
 
+        public int outputsLength;
+
 
         // the memory on the cpu
+        // these are weirdly stateful and should ONLY be accessed when debugging
         public float[] inputs;
         public float[,] hiddenWeights;
         public float[] hiddenBiases;
@@ -45,6 +48,14 @@ namespace IanNet
         // the kernels
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> fillRandom1DKernel;
         public Action<Index2D, ArrayView2D<float, Stride2D.DenseX>> fillRandom2DKernel;
+        public Action<
+            Index1D,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>> forwardKernel;
+        public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> activationKernel;
+
 
 
 
@@ -57,6 +68,7 @@ namespace IanNet
             outputWeights = new float[NumberOfOutputs, NumberOfHiddenNodes];
             outputBiases = new float[NumberOfOutputs];
             outputs = new float[NumberOfOutputs];
+            outputsLength = NumberOfOutputs;
 
             InitGpu();
 
@@ -86,6 +98,15 @@ namespace IanNet
             // compile our kernels
             fillRandom1DKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(fillRandom1D);
             fillRandom2DKernel = device.LoadAutoGroupedStreamKernel<Index2D, ArrayView2D<float, Stride2D.DenseX>>(fillRandom2D);
+            forwardKernel = device.LoadAutoGroupedStreamKernel<
+                Index1D,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>>(forward);
+            activationKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(sigmoid);
+
+
         }
 
         public void InitNetwork()
@@ -106,8 +127,24 @@ namespace IanNet
 
         public float[] Forward(float[] inputs)
         {
-            // dummy
-            return inputs;
+            if (inputs.Length != this.inputs.Length)
+                throw new Exception(string.Format("Input length ({0}) does not match expected input length ({1})", inputs.Length, this.inputs.Length));
+
+            // copies the inputs to the gpu
+            inputs.CopyTo(this.inputs, 0);
+            inputsBuffer = device.Allocate1D<float>(inputs);
+
+            // run the kernels
+            forwardKernel(hiddenNodes.Length, inputsBuffer, hiddenWeightsBuffer, hiddenBiasesBuffer, hiddenNodesBuffer);
+            activationKernel(hiddenNodes.Length, hiddenNodesBuffer);
+            forwardKernel(outputsLength, hiddenNodesBuffer, outputWeightsBuffer, outputBiasesBuffer, outputsBuffer);
+            activationKernel(outputsLength, outputsBuffer);
+
+            // read the results from the gpu
+            float[] outputs = outputsBuffer.GetAsArray1D();
+            
+            return outputs;
+
         }
 
         private static void fillRandom1D(Index1D index, ArrayView1D<float, Stride1D.Dense> weights)
@@ -130,6 +167,18 @@ namespace IanNet
             weights[index.X, index.Y] = random.NextFloat() * 2 - 1;
         }
 
+        private static void forward(Index1D node, ArrayView1D<float, Stride1D.Dense> inputs, ArrayView2D<float, Stride2D.DenseX> weights, ArrayView1D<float, Stride1D.Dense> biases, ArrayView1D<float, Stride1D.Dense> output)
+        {
+            float sum = 0;
+            for (var i = 0; i < inputs.Length; i++)
+                sum += inputs[i] * weights[node, i];
+            sum += biases[node];
+            output[node] = sum;
+        }
 
+        private static void sigmoid(Index1D node, ArrayView1D<float, Stride1D.Dense> values)
+        {
+            values[node] = 1f / (1f + MathF.Exp(-values[node]));
+        }
     }
 }
