@@ -16,7 +16,7 @@ void Main()
 {
 	try
 	{
-		NeuralNetwork brain = new NeuralNetwork(2, 2, 1);
+		NeuralNetwork brain = new NeuralNetwork(2, 2, 2);
 		
 		//brain.GetWeightsFromGpu();
 		//PrintWeights(brain.hiddenWeights, "hidden weights");
@@ -26,7 +26,8 @@ void Main()
 		
 		float[] inputs = { 0, 1 };
 		float[] outputs = brain.Forward(inputs);
-		Console.WriteLine(outputs[0]);
+		foreach(var output in outputs)
+			Console.WriteLine(output);
 	}
 	catch (Exception e)
 	{
