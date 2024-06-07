@@ -23,6 +23,7 @@ namespace IanNet
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>> forwardKernel;
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> activationKernel;
+        public Action<Index1D, ArrayView1D<float, Stride1D.Dense>, ArrayView1D<float, Stride1D.Dense>> gradientKernel;
         public Action<
             Index1D,
             ArrayView1D<float, Stride1D.Dense>,
@@ -39,9 +40,23 @@ namespace IanNet
             ArrayView1D<float, Stride1D.Dense>> multiplyKernel;
         public Action<
             Index1D, 
-            ArrayView2D<float, Stride2D.DenseX>,
             ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>> multiplyTransposedKernel;
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>> elementMultiplyKernel;
+        public Action<
+            Index1D,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>> multiplyByLearningRateKernel;
+        public Action<
+            Index2D,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView2D<float, Stride2D.DenseX>> getDeltasKernel;
+        public Action<
+            Index2D,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>> elementAddKernel;
 
         public void CompileKernels()
         {
@@ -55,6 +70,7 @@ namespace IanNet
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(forward);
             activationKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(sigmoid);
+            gradientKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>, ArrayView1D<float, Stride1D.Dense>>(sigmoidPrime);
             getErrorKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>,
@@ -69,11 +85,25 @@ namespace IanNet
                 ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(multiply);
-            multiplyTransposedKernel = device.LoadAutoGroupedStreamKernel<
+            elementMultiplyKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,
-                ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(multiplyTransposed);
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>>(elementMultiply);
+            multiplyByLearningRateKernel = device.LoadAutoGroupedStreamKernel<
+                Index1D,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>>(multiplyByLearningRate);
+            getDeltasKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView2D<float, Stride2D.DenseX>>(getDeltas);
+            elementAddKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>>(elementAdd);
 
         }
 
@@ -111,6 +141,13 @@ namespace IanNet
             values[node] = 1f / (1f + MathF.Exp(-values[node]));
         }
 
+        private static void sigmoidPrime(Index1D node, ArrayView1D<float, Stride1D.Dense> values, ArrayView1D<float, Stride1D.Dense>  results)
+        {
+            //float sigmoid = 1f / (1f + MathF.Exp(-values[node]));
+            //values[node] = sigmoid * (1f - sigmoid);
+            results[node] = values[node] * (1f - values[node]);
+        }
+
         private static void getError(Index1D node, ArrayView1D<float, Stride1D.Dense> guess, ArrayView1D<float, Stride1D.Dense> target, ArrayView1D<float, Stride1D.Dense> error)
         {
             error[node] = target[node] - guess[node];
@@ -129,12 +166,33 @@ namespace IanNet
             result[index] = sum;
         }
 
+        private static void elementMultiply(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = A[index] * B[index];
+        }
+
+        private static void multiplyByLearningRate(Index1D index, ArrayView1D<float, Stride1D.Dense> vector, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = learningRate * vector[index];
+        }
+
+        private static void getDeltas(Index2D index, ArrayView1D<float, Stride1D.Dense> gradient, ArrayView1D<float, Stride1D.Dense> values, ArrayView2D<float, Stride2D.DenseX> deltas)
+        {
+            deltas[index.X, index.Y] = gradient[index.X] * values[index.Y];
+        }
+
+        [Obsolete("This performs worse than simply using transpose then multiply")]
         private static void multiplyTransposed(Index1D index, ArrayView2D<float, Stride2D.DenseX> matrix, ArrayView1D<float, Stride1D.Dense> vector, ArrayView1D<float, Stride1D.Dense> result)
         {
             float sum = 0;
             for (var i = 0; i < vector.Length; i++)
                 sum += matrix[i, index] * vector[index];
             result[index] = sum;
+        }
+
+        private static void elementAdd(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index.X, index.Y] = A[index.X, index.Y] + B[index.X, index.Y];
         }
     }
 }

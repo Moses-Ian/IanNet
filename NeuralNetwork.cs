@@ -22,6 +22,7 @@ namespace IanNet
         public Accelerator device;
 
         public int outputsLength;
+        public static readonly float learningRate = 0.1f;
 
         #region The Memory on the Cpu
         // the memory on the cpu
@@ -32,12 +33,16 @@ namespace IanNet
         public float[] hiddenBiases;
         public float[] hiddenNodes;
         public float[] hiddenErrors;
+        public float[] hiddenGradients;
+        public float[,] hiddenDeltas;
         public float[,] outputWeights;
         public float[,] outputWeightsTransposed;
         public float[] outputBiases;
         public float[] outputs;
         public float[] outputErrors;
         public float[] targets;
+        public float[] outputGradients;
+        public float[,] outputDeltas;
         #endregion
 
         public NeuralNetwork(int NumberOfInputs, int NumberOfHiddenNodes, int NumberOfOutputs) 
@@ -61,12 +66,16 @@ namespace IanNet
             hiddenBiases = new float[NumberOfHiddenNodes];
             hiddenNodes = new float[NumberOfHiddenNodes];
             hiddenErrors = new float[NumberOfHiddenNodes];
+            hiddenGradients = new float[NumberOfHiddenNodes];
+            hiddenDeltas = new float[NumberOfHiddenNodes, NumberOfInputs];
             outputWeights = new float[NumberOfOutputs, NumberOfHiddenNodes];
             outputBiases = new float[NumberOfOutputs];
             outputs = new float[NumberOfOutputs];
             outputErrors = new float[NumberOfOutputs];
             outputsLength = NumberOfOutputs;
             targets = new float[NumberOfOutputs];
+            outputGradients = new float[NumberOfOutputs];
+            outputDeltas = new float[NumberOfOutputs, NumberOfHiddenNodes];
         }
 
         public void InitGpu(bool forceCPU = false)
@@ -78,9 +87,9 @@ namespace IanNet
 
         public void InitNetwork()
         {
-            fillRandom2DKernel((hiddenWeights.GetLength(0), hiddenWeights.GetLength(1)), hiddenWeightsBuffer);
+            fillRandom2DKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer);
             fillRandom1DKernel(hiddenBiases.Length, hiddenBiasesBuffer);
-            fillRandom2DKernel((outputWeights.GetLength(0), outputWeights.GetLength(1)), outputWeightsBuffer);
+            fillRandom2DKernel(GetIndex2D(outputWeights), outputWeightsBuffer);
             fillRandom1DKernel(outputBiases.Length, outputBiasesBuffer);
         }
 
@@ -119,15 +128,48 @@ namespace IanNet
             this.targets = targets;
             targetsBuffer = device.Allocate1D(targets);
 
+            #region Update Output Weights
             // get the error
             getErrorKernel(outputsLength, outputsBuffer, targetsBuffer, outputErrorsBuffer);
 
-            // transpose the weights
-            transposeKernel((hiddenWeightsTransposed.GetLength(0), hiddenWeightsTransposed.GetLength(1)), hiddenWeightsBuffer, hiddenWeightsTransposedBuffer);
-            // and multiply them
+            // calculate gradient
+            gradientKernel(outputsLength, outputsBuffer, outputGradientsBuffer);
+            elementMultiplyKernel(outputsLength, outputErrorsBuffer, outputGradientsBuffer, outputGradientsBuffer);
+            multiplyByLearningRateKernel(outputsLength, outputGradientsBuffer, outputGradientsBuffer);
+
+            // calculate deltas
+            getDeltasKernel((outputGradients.Length, hiddenNodes.Length), outputGradientsBuffer, hiddenNodesBuffer, outputDeltasBuffer);
+            
+            // and update the weights
+            elementAddKernel(GetIndex2D(outputWeights), outputWeightsBuffer, outputDeltasBuffer, outputWeightsBuffer);
+            #endregion
+
+            #region Update Hidden Weights
+            // to get the error...
+            // transpose the weights...
+            transposeKernel(GetIndex2D(hiddenWeightsTransposed), hiddenWeightsBuffer, hiddenWeightsTransposedBuffer);
+            // ...and multiply them
             multiplyKernel(hiddenErrors.Length, hiddenWeightsTransposedBuffer, outputErrorsBuffer, hiddenErrorsBuffer);
+
+            // calculate gradient
+            gradientKernel(hiddenNodes.Length, hiddenNodesBuffer, hiddenGradientsBuffer);
+            elementMultiplyKernel(hiddenNodes.Length, hiddenErrorsBuffer, hiddenGradientsBuffer, hiddenGradientsBuffer);
+            multiplyByLearningRateKernel(hiddenNodes.Length, hiddenGradientsBuffer, hiddenGradientsBuffer);
+
+            // calculate deltas
+            getDeltasKernel((hiddenNodes.Length, this.inputs.Length), hiddenGradientsBuffer, inputsBuffer, hiddenDeltasBuffer);
+            
+            // and update the weights
+            elementAddKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer, hiddenDeltasBuffer, hiddenWeightsBuffer);
+            #endregion
+
+
         }
 
+        public Index2D GetIndex2D(float[,] matrix)
+        {
+            return new Index2D(matrix.GetLength(0), matrix.GetLength(1));
+        }
         
     }
 }

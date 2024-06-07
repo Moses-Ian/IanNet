@@ -28,6 +28,8 @@ void Main()
 		float[] outputs = brain.Forward(inputs);
 		foreach(var output in outputs)
 			Console.WriteLine(output);
+			
+		brain.Train(inputs, new float[] { 1, 0 });
 	}
 	catch (Exception e)
 	{
