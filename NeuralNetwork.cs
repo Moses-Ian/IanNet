@@ -69,6 +69,7 @@ namespace IanNet
             hiddenGradients = new float[NumberOfHiddenNodes];
             hiddenDeltas = new float[NumberOfHiddenNodes, NumberOfInputs];
             outputWeights = new float[NumberOfOutputs, NumberOfHiddenNodes];
+            outputWeightsTransposed = new float[NumberOfHiddenNodes, NumberOfOutputs];
             outputBiases = new float[NumberOfOutputs];
             outputs = new float[NumberOfOutputs];
             outputErrors = new float[NumberOfOutputs];
@@ -93,7 +94,7 @@ namespace IanNet
             fillRandom1DKernel(outputBiases.Length, outputBiasesBuffer);
         }
 
-        public float[] Forward(float[] inputs)
+        public float[] Forward(float[] inputs, bool returnResult = true)
         {
             if (inputs.Length != this.inputs.Length)
                 throw new Exception(string.Format("Input length ({0}) does not match expected input length ({1})", inputs.Length, this.inputs.Length));
@@ -108,9 +109,10 @@ namespace IanNet
             forwardKernel(outputsLength, hiddenNodesBuffer, outputWeightsBuffer, outputBiasesBuffer, outputsBuffer);
             activationKernel(outputsLength, outputsBuffer);
 
-            // read the results from the gpu
+            if (!returnResult)
+                return null;
+
             outputs = outputsBuffer.GetAsArray1D();
-            
             return outputs;
         }
 
@@ -122,7 +124,7 @@ namespace IanNet
                 throw new Exception(string.Format("Targets length ({0}) does not match expected target length ({1})", targets.Length, this.targets.Length));
 
             // get the guess
-            float[] guess = Forward(inputs);
+            Forward(inputs, returnResult: false);
 
             // put the targets on the gpu
             this.targets = targets;
@@ -131,38 +133,41 @@ namespace IanNet
             #region Update Output Weights
             // get the error
             getErrorKernel(outputsLength, outputsBuffer, targetsBuffer, outputErrorsBuffer);
-
+            
             // calculate gradient
             gradientKernel(outputsLength, outputsBuffer, outputGradientsBuffer);
             elementMultiplyKernel(outputsLength, outputErrorsBuffer, outputGradientsBuffer, outputGradientsBuffer);
             multiplyByLearningRateKernel(outputsLength, outputGradientsBuffer, outputGradientsBuffer);
-
+            
             // calculate deltas
             getDeltasKernel((outputGradients.Length, hiddenNodes.Length), outputGradientsBuffer, hiddenNodesBuffer, outputDeltasBuffer);
             
             // and update the weights
-            elementAddKernel(GetIndex2D(outputWeights), outputWeightsBuffer, outputDeltasBuffer, outputWeightsBuffer);
+            elementAdd2DKernel(GetIndex2D(outputWeights), outputWeightsBuffer, outputDeltasBuffer, outputWeightsBuffer);
+            // the biases are updated simply with the gradients
+            elementAdd1DKernel(outputBiases.Length, outputBiasesBuffer, outputGradientsBuffer, outputBiasesBuffer);
             #endregion
-
+            
             #region Update Hidden Weights
             // to get the error...
             // transpose the weights...
-            transposeKernel(GetIndex2D(hiddenWeightsTransposed), hiddenWeightsBuffer, hiddenWeightsTransposedBuffer);
+            transposeKernel(GetIndex2D(outputWeightsTransposed), outputWeightsBuffer, outputWeightsTransposedBuffer);
             // ...and multiply them
-            multiplyKernel(hiddenErrors.Length, hiddenWeightsTransposedBuffer, outputErrorsBuffer, hiddenErrorsBuffer);
-
+            multiplyKernel(hiddenErrors.Length, outputWeightsTransposedBuffer, outputErrorsBuffer, hiddenErrorsBuffer);
+            
             // calculate gradient
             gradientKernel(hiddenNodes.Length, hiddenNodesBuffer, hiddenGradientsBuffer);
             elementMultiplyKernel(hiddenNodes.Length, hiddenErrorsBuffer, hiddenGradientsBuffer, hiddenGradientsBuffer);
             multiplyByLearningRateKernel(hiddenNodes.Length, hiddenGradientsBuffer, hiddenGradientsBuffer);
-
+            
             // calculate deltas
             getDeltasKernel((hiddenNodes.Length, this.inputs.Length), hiddenGradientsBuffer, inputsBuffer, hiddenDeltasBuffer);
             
             // and update the weights
-            elementAddKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer, hiddenDeltasBuffer, hiddenWeightsBuffer);
+            elementAdd2DKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer, hiddenDeltasBuffer, hiddenWeightsBuffer);
+            // the biases are updated simply with the gradients
+            elementAdd1DKernel(hiddenBiases.Length, hiddenBiasesBuffer, hiddenGradientsBuffer, hiddenBiasesBuffer);
             #endregion
-
 
         }
 

@@ -16,20 +16,55 @@ void Main()
 {
 	try
 	{
-		NeuralNetwork brain = new NeuralNetwork(2, 2, 2);
+		NeuralNetwork brain = new NeuralNetwork(2, 4, 1);
 		
-		//brain.GetWeightsFromGpu();
-		//PrintWeights(brain.hiddenWeights, "hidden weights");
-		//PrintWeights(brain.hiddenBiases, "hidden biases");
-		//PrintWeights(brain.outputWeights, "output weights");
-		//PrintWeights(brain.outputBiases, "output biases");
+		TrainingData[] trainingData = new TrainingData[]
+		{
+			new TrainingData()
+			{
+				input = new float[] { 0, 1 },
+				target = new float[] { 1 }
+			},
+			new TrainingData()
+			{
+				input = new float[] { 1, 0 },
+				target = new float[] { 1 }
+			},
+			new TrainingData()
+			{
+				input = new float[] { 0, 0 },
+				target = new float[] { 0 }
+			},
+			new TrainingData()
+			{
+				input = new float[] { 1, 1 },
+				target = new float[] { 0 }
+			},
+		};
+
+		Random random = new Random();
+		Stopwatch stopwatch = new Stopwatch();
+		stopwatch.Start();
+		for (int i=0; i<100000; i++)
+		{
+			var r = random.Next(trainingData.Length);
+			var data = trainingData[r];
+			brain.Train(data.input, data.target);
+		}
+		stopwatch.Stop();
+		Console.WriteLine($"Ran in {stopwatch.ElapsedMilliseconds / 1000f} seconds");
+				
+		float[] guess = brain.Forward(new float[] { 1, 0 });
+		Console.WriteLine(string.Format("( 1, 0 ) -> {0}", guess[0]));
 		
-		float[] inputs = { 0, 1 };
-		float[] outputs = brain.Forward(inputs);
-		foreach(var output in outputs)
-			Console.WriteLine(output);
-			
-		brain.Train(inputs, new float[] { 1, 0 });
+		guess = brain.Forward(new float[] { 0, 1 });
+		Console.WriteLine(string.Format("( 0, 1 ) -> {0}", guess[0]));
+		
+		guess = brain.Forward(new float[] { 0, 0 });
+		Console.WriteLine(string.Format("( 0, 0 ) -> {0}", guess[0]));
+		
+		guess = brain.Forward(new float[] { 1, 1 });
+		Console.WriteLine(string.Format("( 1, 1 ) -> {0}", guess[0]));
 	}
 	catch (Exception e)
 	{
@@ -55,3 +90,21 @@ public void PrintWeights(float[,] weights, string name=null)
 		for (int j=0; j<weights.GetLength(1); j++)
 			Console.WriteLine(weights[i,j]);
 }
+
+public struct TrainingData
+{
+	public float[] input;
+	public float[] target;
+}
+
+
+
+
+
+
+
+
+
+
+
+

@@ -56,7 +56,12 @@ namespace IanNet
             Index2D,
             ArrayView2D<float, Stride2D.DenseX>,
             ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>> elementAddKernel;
+            ArrayView2D<float, Stride2D.DenseX>> elementAdd2DKernel;
+        public Action<
+            Index1D,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>> elementAdd1DKernel;
 
         public void CompileKernels()
         {
@@ -99,11 +104,16 @@ namespace IanNet
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView2D<float, Stride2D.DenseX>>(getDeltas);
-            elementAddKernel = device.LoadAutoGroupedStreamKernel<
+            elementAdd2DKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
                 ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>>(elementAdd);
+                ArrayView2D<float, Stride2D.DenseX>>(elementAdd2D);
+            elementAdd1DKernel = device.LoadAutoGroupedStreamKernel<
+                Index1D,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>>(elementAdd1D);
 
         }
 
@@ -111,20 +121,21 @@ namespace IanNet
         {
             // Create a random number generator for each thread
             // seed it with the index (but not 0)
-            var random = new XorShift64Star((ulong)index + 1);
+            // just fishing to have the biases be very different numbers from the other weights
+            var random = new XorShift64Star((ulong)(index + (weights.Length * weights.Length) + weights.Length + 1));
 
             // Generate a random number between -1 and 1
-            weights[index] = random.NextFloat() * 2 - 1;
+            weights[index] = random.NextFloat();// * 2 - 1;
         }
 
         private static void fillRandom2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> weights)
         {
             // Create a random number generator for each thread
             // seed it with the index (but not 0)
-            var random = new XorShift64Star((ulong)(index.X + index.Y + 1));
-
+            var random = new XorShift64Star((ulong)(index.X * weights.Extent.Y + index.Y + 1));
+            
             // Generate a random number between -1 and 1
-            weights[index.X, index.Y] = random.NextFloat() * 2 - 1;
+            weights[index.X, index.Y] = random.NextFloat();// * 2 - 1;
         }
 
         private static void forward(Index1D node, ArrayView1D<float, Stride1D.Dense> inputs, ArrayView2D<float, Stride2D.DenseX> weights, ArrayView1D<float, Stride1D.Dense> biases, ArrayView1D<float, Stride1D.Dense> output)
@@ -143,8 +154,6 @@ namespace IanNet
 
         private static void sigmoidPrime(Index1D node, ArrayView1D<float, Stride1D.Dense> values, ArrayView1D<float, Stride1D.Dense>  results)
         {
-            //float sigmoid = 1f / (1f + MathF.Exp(-values[node]));
-            //values[node] = sigmoid * (1f - sigmoid);
             results[node] = values[node] * (1f - values[node]);
         }
 
@@ -162,7 +171,7 @@ namespace IanNet
         {
             float sum = 0;
             for (var i = 0; i < vector.Length; i++)
-                sum += matrix[index, i] * vector[index];
+                sum += matrix[index, i] * vector[i];
             result[index] = sum;
         }
 
@@ -186,13 +195,18 @@ namespace IanNet
         {
             float sum = 0;
             for (var i = 0; i < vector.Length; i++)
-                sum += matrix[i, index] * vector[index];
+                sum += matrix[i, index] * vector[i];
             result[index] = sum;
         }
 
-        private static void elementAdd(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
+        private static void elementAdd2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
         {
             result[index.X, index.Y] = A[index.X, index.Y] + B[index.X, index.Y];
+        }
+
+        private static void elementAdd1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = A[index] + B[index];
         }
     }
 }

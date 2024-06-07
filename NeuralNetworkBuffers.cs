@@ -42,7 +42,7 @@ namespace IanNet
             hiddenGradientsBuffer = device.Allocate1D<float>(hiddenNodes.Length);
             hiddenDeltasBuffer = device.Allocate2DDenseX<float>((hiddenNodes.Length, inputs.Length));
             outputWeightsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(outputWeights));
-            outputWeightsTransposedBuffer = device.Allocate2DDenseX<float>(GetIndex2D(outputWeights));
+            outputWeightsTransposedBuffer = device.Allocate2DDenseX<float>(GetIndex2D(outputWeightsTransposed));
             outputBiasesBuffer = device.Allocate1D<float>(outputBiases.Length);
             outputsBuffer = device.Allocate1D<float>(outputs.Length);
             outputErrorsBuffer = device.Allocate1D<float>(outputs.Length);
@@ -81,6 +81,29 @@ namespace IanNet
         {
             hiddenErrors = hiddenErrorsBuffer.GetAsArray1D();
             outputErrors = outputErrorsBuffer.GetAsArray1D();
+        }
+
+        public void GetOutputsFromGpu()
+        {
+            hiddenNodes = hiddenNodesBuffer.GetAsArray1D();
+            outputs = outputsBuffer.GetAsArray1D();
+        }
+
+        public void GetGradientsFromGpu()
+        {
+            hiddenGradients = hiddenGradientsBuffer.GetAsArray1D();
+            outputGradients = outputGradientsBuffer.GetAsArray1D();
+        }
+
+        public void GetDeltasFromGpu()
+        {
+            hiddenDeltas = hiddenDeltasBuffer.GetAsArray2D();
+            outputDeltas = outputDeltasBuffer.GetAsArray2D();
+        }
+
+        public void GetTransposedWeightsFromGpu()
+        {
+            outputWeightsTransposed = outputWeightsTransposedBuffer.GetAsArray2D();
         }
 
     }
