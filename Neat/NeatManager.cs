@@ -13,6 +13,7 @@ namespace IanNet.Neat
         public List<INeatable> Neatables;
         public int nextIndex = 0;
         public int generation = 0;
+        Random random = new Random();
 
         public NeatManager()
         {
@@ -68,9 +69,11 @@ namespace IanNet.Neat
             // build the next generation
             for (int i = 0; i < Neatables.Count; i++)
             {
-                INeatable neatable = PickOne();
-                neatable.NeatId = $"{generation}-{nextGeneration.Count}";
-                nextGeneration.Add(neatable);
+                INeatable parent = PickOne();
+                INeatable child = parent.Copy();
+                child.NeatId = $"{generation}-{nextGeneration.Count}";
+                child.Mutate();
+                nextGeneration.Add(child);
             }
 
             // clean up the old generation
@@ -97,10 +100,16 @@ namespace IanNet.Neat
 
         public INeatable PickOne()
         {
-            Random random = new Random();
-            int index = random.Next(Neatables.Count);
-            INeatable neatable = Neatables[index].Copy();
-            return neatable;
+            int index = 0;
+            float r = (float)random.NextDouble();
+
+            while (r > 0)
+            {
+                r = r - Neatables[index].Fitness;
+                index++;
+            }
+            index--;
+            return Neatables[index];
         }
     }
 }

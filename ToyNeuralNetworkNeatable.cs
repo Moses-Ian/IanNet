@@ -17,5 +17,13 @@ namespace IanNet
         {
             return new ToyNeuralNetwork(this);
         }
+
+        public void Mutate()
+        {
+            mutate2DKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer, random.NextInt64());
+            mutate1DKernel(hiddenBiases.Length, hiddenBiasesBuffer, random.NextInt64());
+            mutate2DKernel(GetIndex2D(outputWeights), outputWeightsBuffer, random.NextInt64());
+            mutate1DKernel(outputBiases.Length, outputBiasesBuffer, random.NextInt64());
+        }
     }
 }

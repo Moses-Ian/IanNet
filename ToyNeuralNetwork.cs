@@ -24,7 +24,7 @@ namespace IanNet
 
         public int outputsLength;
         public float learningRate;
-        public long seed;
+        Random random = new Random();
 
         #region The Memory on the Cpu
         // the memory on the cpu
@@ -47,20 +47,9 @@ namespace IanNet
         public float[,] outputDeltas;
         #endregion
 
-        public ToyNeuralNetwork(int NumberOfInputs, int NumberOfHiddenNodes, int NumberOfOutputs, float learningRate = 0.1f, long? seed = null) 
+        public ToyNeuralNetwork(int NumberOfInputs, int NumberOfHiddenNodes, int NumberOfOutputs, float learningRate = 0.1f) 
         {
             this.learningRate = learningRate;
-            if (seed == null)
-            {
-                Random random = new Random();
-                this.seed = random.NextInt64();
-            }
-            else
-            {
-                this.seed = seed.Value;
-            }
-
-
             InitCpu(NumberOfInputs, NumberOfHiddenNodes, NumberOfOutputs);
 
             InitGpu();
@@ -75,7 +64,6 @@ namespace IanNet
         public ToyNeuralNetwork(ToyNeuralNetwork Net)
         {
             learningRate = Net.learningRate;
-            seed = Net.seed;
             InitCpu(Net.inputs.Length, Net.hiddenNodes.Length, Net.outputs.Length);
             InitGpu();
             InitBuffers();
@@ -113,10 +101,10 @@ namespace IanNet
 
         public void InitNetwork()
         {
-            fillRandom2DKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer, seed);
-            fillRandom1DKernel(hiddenBiases.Length, hiddenBiasesBuffer, seed);
-            fillRandom2DKernel(GetIndex2D(outputWeights), outputWeightsBuffer, seed);
-            fillRandom1DKernel(outputBiases.Length, outputBiasesBuffer, seed);
+            fillRandom2DKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer, random.NextInt64());
+            fillRandom1DKernel(hiddenBiases.Length, hiddenBiasesBuffer, random.NextInt64());
+            fillRandom2DKernel(GetIndex2D(outputWeights), outputWeightsBuffer, random.NextInt64());
+            fillRandom1DKernel(outputBiases.Length, outputBiasesBuffer, random.NextInt64());
         }
 
         public void InitNetwork(ToyNeuralNetwork Net)

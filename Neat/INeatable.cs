@@ -13,5 +13,6 @@ namespace IanNet.Neat
         float Fitness { get; set; }
 
         INeatable Copy();
+        void Mutate();
     }
 }

@@ -63,6 +63,14 @@ namespace IanNet
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>> elementAdd1DKernel;
+        public Action<
+            Index1D,
+            ArrayView1D<float, Stride1D.Dense>,
+            long> mutate1DKernel;
+        public Action<
+            Index2D,
+            ArrayView2D<float, Stride2D.DenseX>,
+            long> mutate2DKernel;
 
         public void CompileKernels()
         {
@@ -116,6 +124,14 @@ namespace IanNet
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(elementAdd1D);
+            mutate1DKernel = device.LoadAutoGroupedStreamKernel<
+                Index1D,
+                ArrayView1D<float, Stride1D.Dense>,
+                long>(mutate1D);
+            mutate2DKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                long>(mutate2D);
 
         }
 
@@ -124,7 +140,7 @@ namespace IanNet
             // Create a random number generator for each thread
             // seed it with the index (but not 0)
             // just fishing to have the biases be very different numbers from the other weights
-            var random = new XorShift64Star((ulong)(index + (weights.Length * weights.Length) + weights.Length + seed));
+            var random = new XorShift64Star((ulong)(index + seed));
 
             // Generate a random number between -1 and 1
             weights[index] = random.NextFloat();// * 2 - 1;
@@ -209,6 +225,39 @@ namespace IanNet
         private static void elementAdd1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> result)
         {
             result[index] = A[index] + B[index];
+        }
+
+        // Todo: benchtest this against https://en.wikipedia.org/wiki/Ziggurat_algorithm
+        private static void mutate1D(Index1D index, ArrayView1D<float, Stride1D.Dense> biases, long seed)
+        {
+            var random = new XorShift64Star((ulong)(index + seed));
+            if (random.NextFloat() < 0.1)
+            {
+                float u1 = random.NextFloat();
+                float u2 = random.NextFloat();
+
+                // convert f into a random gaussian g -> Box-Muller Transform
+                // g ranges from -3 to +3
+                float g = MathF.Sqrt(-2.0f * MathF.Log(u1)) * MathF.Cos(2.0f * MathF.PI * u2);
+
+                biases[index] += g / 6f;
+            }
+        }
+
+        private static void mutate2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> weights, long seed)
+        {
+            var random = new XorShift64Star((ulong)(index.X * weights.Extent.Y + index.Y + seed));
+            if (random.NextFloat() < 0.1)
+            {
+                float u1 = random.NextFloat();
+                float u2 = random.NextFloat();
+
+                // convert f into a random gaussian g -> Box-Muller Transform
+                // g ranges from -3 to +3
+                float g = MathF.Sqrt(-2.0f * MathF.Log(u1)) * MathF.Cos(2.0f * MathF.PI * u2);
+
+                weights[index.X, index.Y] += g / 6f;
+            }
         }
     }
 }
