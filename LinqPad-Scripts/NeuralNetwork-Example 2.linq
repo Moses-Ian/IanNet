@@ -16,7 +16,7 @@ void Main()
 {
 	try
 	{
-		NeuralNetwork brain = new NeuralNetwork(2, 4, 1);
+		ToyNeuralNetwork brain = new ToyNeuralNetwork(2, 4, 1, learningRate: 0.2f);
 		
 		TrainingData[] trainingData = CreateTrainingData();
 		Random random = new Random();
@@ -52,7 +52,7 @@ void Main()
 	}
 }
 
-public void GuessTheWholeSpace(NeuralNetwork brain, float[,] arr)
+public void GuessTheWholeSpace(ToyNeuralNetwork brain, float[,] arr)
 {
 	for(int i=0; i<arr.GetLength(0); i++)
 	{

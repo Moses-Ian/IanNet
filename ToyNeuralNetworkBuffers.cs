@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace IanNet
 {
-    public partial class NeuralNetwork
+    public partial class ToyNeuralNetwork
     {
         // the memory on the gpu
         private MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer;

@@ -11,11 +11,11 @@ using ILGPU.Algorithms.Random;
 
 namespace IanNet
 {
-    public partial class NeuralNetwork
+    public partial class ToyNeuralNetwork
     {
         // the kernels
-        public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> fillRandom1DKernel;
-        public Action<Index2D, ArrayView2D<float, Stride2D.DenseX>> fillRandom2DKernel;
+        public Action<Index1D, ArrayView1D<float, Stride1D.Dense>, long> fillRandom1DKernel;
+        public Action<Index2D, ArrayView2D<float, Stride2D.DenseX>, long> fillRandom2DKernel;
         public Action<
             Index1D,
             ArrayView1D<float, Stride1D.Dense>,
@@ -46,6 +46,7 @@ namespace IanNet
         public Action<
             Index1D,
             ArrayView1D<float, Stride1D.Dense>,
+            float,
             ArrayView1D<float, Stride1D.Dense>> multiplyByLearningRateKernel;
         public Action<
             Index2D,
@@ -66,8 +67,8 @@ namespace IanNet
         public void CompileKernels()
         {
             // compile our kernels
-            fillRandom1DKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(fillRandom1D);
-            fillRandom2DKernel = device.LoadAutoGroupedStreamKernel<Index2D, ArrayView2D<float, Stride2D.DenseX>>(fillRandom2D);
+            fillRandom1DKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>, long>(fillRandom1D);
+            fillRandom2DKernel = device.LoadAutoGroupedStreamKernel<Index2D, ArrayView2D<float, Stride2D.DenseX>, long>(fillRandom2D);
             forwardKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>,
@@ -98,6 +99,7 @@ namespace IanNet
             multiplyByLearningRateKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>,
+                float,
                 ArrayView1D<float, Stride1D.Dense>>(multiplyByLearningRate);
             getDeltasKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
@@ -117,22 +119,22 @@ namespace IanNet
 
         }
 
-        private static void fillRandom1D(Index1D index, ArrayView1D<float, Stride1D.Dense> weights)
+        private static void fillRandom1D(Index1D index, ArrayView1D<float, Stride1D.Dense> weights, long seed)
         {
             // Create a random number generator for each thread
             // seed it with the index (but not 0)
             // just fishing to have the biases be very different numbers from the other weights
-            var random = new XorShift64Star((ulong)(index + (weights.Length * weights.Length) + weights.Length + 1));
+            var random = new XorShift64Star((ulong)(index + (weights.Length * weights.Length) + weights.Length + seed));
 
             // Generate a random number between -1 and 1
             weights[index] = random.NextFloat();// * 2 - 1;
         }
 
-        private static void fillRandom2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> weights)
+        private static void fillRandom2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> weights, long seed)
         {
             // Create a random number generator for each thread
             // seed it with the index (but not 0)
-            var random = new XorShift64Star((ulong)(index.X * weights.Extent.Y + index.Y + 1));
+            var random = new XorShift64Star((ulong)(index.X * weights.Extent.Y + index.Y + seed));
             
             // Generate a random number between -1 and 1
             weights[index.X, index.Y] = random.NextFloat();// * 2 - 1;
@@ -180,7 +182,7 @@ namespace IanNet
             result[index] = A[index] * B[index];
         }
 
-        private static void multiplyByLearningRate(Index1D index, ArrayView1D<float, Stride1D.Dense> vector, ArrayView1D<float, Stride1D.Dense> result)
+        private static void multiplyByLearningRate(Index1D index, ArrayView1D<float, Stride1D.Dense> vector, float learningRate, ArrayView1D<float, Stride1D.Dense> result)
         {
             result[index] = learningRate * vector[index];
         }

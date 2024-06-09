@@ -15,14 +15,15 @@ using ILGPU.Algorithms.Random;
 
 namespace IanNet
 {
-    public partial class NeuralNetwork
+    public partial class ToyNeuralNetwork
     {
         // gpu things
         public Context context;
         public Accelerator device;
 
         public int outputsLength;
-        public static readonly float learningRate = 0.1f;
+        public float learningRate;
+        public long seed;
 
         #region The Memory on the Cpu
         // the memory on the cpu
@@ -45,8 +46,20 @@ namespace IanNet
         public float[,] outputDeltas;
         #endregion
 
-        public NeuralNetwork(int NumberOfInputs, int NumberOfHiddenNodes, int NumberOfOutputs) 
+        public ToyNeuralNetwork(int NumberOfInputs, int NumberOfHiddenNodes, int NumberOfOutputs, float learningRate = 0.1f, long? seed = null) 
         {
+            this.learningRate = learningRate;
+            if (seed == null)
+            {
+                Random random = new Random();
+                this.seed = random.NextInt64();
+            }
+            else
+            {
+                this.seed = seed.Value;
+            }
+
+
             InitCpu(NumberOfInputs, NumberOfHiddenNodes, NumberOfOutputs);
 
             InitGpu();
@@ -88,10 +101,10 @@ namespace IanNet
 
         public void InitNetwork()
         {
-            fillRandom2DKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer);
-            fillRandom1DKernel(hiddenBiases.Length, hiddenBiasesBuffer);
-            fillRandom2DKernel(GetIndex2D(outputWeights), outputWeightsBuffer);
-            fillRandom1DKernel(outputBiases.Length, outputBiasesBuffer);
+            fillRandom2DKernel(GetIndex2D(hiddenWeights), hiddenWeightsBuffer, seed);
+            fillRandom1DKernel(hiddenBiases.Length, hiddenBiasesBuffer, seed);
+            fillRandom2DKernel(GetIndex2D(outputWeights), outputWeightsBuffer, seed);
+            fillRandom1DKernel(outputBiases.Length, outputBiasesBuffer, seed);
         }
 
         public float[] Forward(float[] inputs, bool returnResult = true)
@@ -137,7 +150,7 @@ namespace IanNet
             // calculate gradient
             gradientKernel(outputsLength, outputsBuffer, outputGradientsBuffer);
             elementMultiplyKernel(outputsLength, outputErrorsBuffer, outputGradientsBuffer, outputGradientsBuffer);
-            multiplyByLearningRateKernel(outputsLength, outputGradientsBuffer, outputGradientsBuffer);
+            multiplyByLearningRateKernel(outputsLength, outputGradientsBuffer, learningRate, outputGradientsBuffer);
             
             // calculate deltas
             getDeltasKernel((outputGradients.Length, hiddenNodes.Length), outputGradientsBuffer, hiddenNodesBuffer, outputDeltasBuffer);
@@ -158,7 +171,7 @@ namespace IanNet
             // calculate gradient
             gradientKernel(hiddenNodes.Length, hiddenNodesBuffer, hiddenGradientsBuffer);
             elementMultiplyKernel(hiddenNodes.Length, hiddenErrorsBuffer, hiddenGradientsBuffer, hiddenGradientsBuffer);
-            multiplyByLearningRateKernel(hiddenNodes.Length, hiddenGradientsBuffer, hiddenGradientsBuffer);
+            multiplyByLearningRateKernel(hiddenNodes.Length, hiddenGradientsBuffer, learningRate, hiddenGradientsBuffer);
             
             // calculate deltas
             getDeltasKernel((hiddenNodes.Length, this.inputs.Length), hiddenGradientsBuffer, inputsBuffer, hiddenDeltasBuffer);
