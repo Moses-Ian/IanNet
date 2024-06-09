@@ -8,6 +8,6 @@ namespace IanNet.Neat
 {
     public interface INeatable
     {
-
+        string NeatId { get; set; }
     }
 }

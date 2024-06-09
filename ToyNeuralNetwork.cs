@@ -11,11 +11,12 @@ using System.Threading.Tasks;
 using ILGPU.Runtime.Cuda;
 using ILGPU.Runtime.CPU;
 using ILGPU.Algorithms.Random;
+using IanNet.Neat;
 
 
 namespace IanNet
 {
-    public partial class ToyNeuralNetwork
+    public partial class ToyNeuralNetwork : IDisposable
     {
         // gpu things
         public Context context;
@@ -188,6 +189,10 @@ namespace IanNet
         {
             return new Index2D(matrix.GetLength(0), matrix.GetLength(1));
         }
-        
+
+        public void Dispose()
+        {
+            device.Dispose();
+        }
     }
 }
