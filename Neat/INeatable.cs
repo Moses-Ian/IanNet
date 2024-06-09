@@ -9,5 +9,9 @@ namespace IanNet.Neat
     public interface INeatable
     {
         string NeatId { get; set; }
+        float Score { get; set; }
+        float Fitness { get; set; }
+
+        INeatable Copy();
     }
 }

@@ -72,6 +72,17 @@ namespace IanNet
             InitNetwork();
         }
 
+        public ToyNeuralNetwork(ToyNeuralNetwork Net)
+        {
+            learningRate = Net.learningRate;
+            seed = Net.seed;
+            InitCpu(Net.inputs.Length, Net.hiddenNodes.Length, Net.outputs.Length);
+            InitGpu();
+            InitBuffers();
+            CompileKernels();
+            InitNetwork(Net);
+        }
+
         public void InitCpu(int NumberOfInputs, int NumberOfHiddenNodes, int NumberOfOutputs)
         {
             inputs = new float[NumberOfInputs];
@@ -106,6 +117,14 @@ namespace IanNet
             fillRandom1DKernel(hiddenBiases.Length, hiddenBiasesBuffer, seed);
             fillRandom2DKernel(GetIndex2D(outputWeights), outputWeightsBuffer, seed);
             fillRandom1DKernel(outputBiases.Length, outputBiasesBuffer, seed);
+        }
+
+        public void InitNetwork(ToyNeuralNetwork Net)
+        {
+            Net.hiddenWeightsBuffer.CopyTo(hiddenWeightsBuffer);
+            Net.hiddenBiasesBuffer.CopyTo(hiddenBiasesBuffer);
+            Net.outputWeightsBuffer.CopyTo(outputWeightsBuffer);
+            Net.outputBiasesBuffer.CopyTo(outputBiasesBuffer);
         }
 
         public float[] Forward(float[] inputs, bool returnResult = true)
