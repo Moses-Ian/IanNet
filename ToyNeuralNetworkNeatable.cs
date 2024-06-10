@@ -15,7 +15,10 @@ namespace IanNet
 
         public INeatable Copy()
         {
-            return new ToyNeuralNetwork(this);
+            if (isSerialized)
+                return Deserialize(serializedFilepath);
+            else
+                return new ToyNeuralNetwork(this);
         }
 
         public void Mutate()

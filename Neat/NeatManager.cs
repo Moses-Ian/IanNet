@@ -10,10 +10,15 @@ namespace IanNet.Neat
 {
     public class NeatManager
     {
+        public List<INeatable> previousGeneration;
         public List<INeatable> Neatables;
         public int nextIndex = 0;
         public int generation = 0;
+        public int populationMax = 100;
         Random random = new Random();
+
+        public int population { get => Neatables.Count; }
+
 
         public NeatManager()
         {
@@ -61,28 +66,13 @@ namespace IanNet.Neat
             // initialize the next generation
             nextIndex = 0;
             generation++;
-            List<INeatable> nextGeneration = new List<INeatable>();
-
+            
             // calculate fitness for each neatable
             CalculateFitness();
 
-            // build the next generation
-            for (int i = 0; i < Neatables.Count; i++)
-            {
-                INeatable parent = PickOne();
-                INeatable child = parent.Copy();
-                child.NeatId = $"{generation}-{nextGeneration.Count}";
-                child.Mutate();
-                nextGeneration.Add(child);
-            }
-
-            // clean up the old generation
-            if (DisposeOldGeneration && Neatables[0] is IDisposable)
-                foreach (IDisposable disposable in Neatables)
-                    disposable.Dispose();
-
             // update the next generation
-            Neatables = nextGeneration;
+            previousGeneration = Neatables;
+            Neatables = new List<INeatable>();
         }
 
         public void CalculateFitness()
@@ -105,11 +95,31 @@ namespace IanNet.Neat
 
             while (r > 0)
             {
-                r = r - Neatables[index].Fitness;
+                r = r - previousGeneration[index].Fitness;
                 index++;
             }
             index--;
-            return Neatables[index];
+            return previousGeneration[index];
+        }
+
+        public INeatable SpawnChild()
+        {
+            INeatable parent = PickOne();
+            INeatable child = parent.Copy();
+            child.NeatId = $"{generation}-{Neatables.Count}";
+            child.Mutate();
+            Neatables.Add(child);
+            return child;
+        }
+
+        public bool IsGenerationFull()
+        {
+            return population >= populationMax;
+        }
+
+        public bool IsFirstGeneration()
+        {
+            return generation == 0;
         }
     }
 }

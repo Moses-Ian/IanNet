@@ -12,7 +12,9 @@ using ILGPU.Runtime.Cuda;
 using ILGPU.Runtime.CPU;
 using ILGPU.Algorithms.Random;
 using IanNet.Neat;
-
+using IanNet.Helpers;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace IanNet
 {
@@ -25,6 +27,9 @@ namespace IanNet
         public int outputsLength;
         public float learningRate;
         Random random = new Random();
+
+        public bool isSerialized = false;
+        public string serializedFilepath;
 
         #region The Memory on the Cpu
         // the memory on the cpu
@@ -65,6 +70,16 @@ namespace IanNet
         {
             learningRate = Net.learningRate;
             InitCpu(Net.inputs.Length, Net.hiddenNodes.Length, Net.outputs.Length);
+            InitGpu();
+            InitBuffers();
+            CompileKernels();
+            InitNetwork(Net);
+        }
+
+        public ToyNeuralNetwork(SerializableToyNeuralNetwork Net)
+        {
+            learningRate = Net.learningRate;
+            InitCpu(Net.inputNodes, Net.hiddenWeights.GetLength(0), Net.outputWeights.GetLength(0));
             InitGpu();
             InitBuffers();
             CompileKernels();
@@ -113,6 +128,14 @@ namespace IanNet
             Net.hiddenBiasesBuffer.CopyTo(hiddenBiasesBuffer);
             Net.outputWeightsBuffer.CopyTo(outputWeightsBuffer);
             Net.outputBiasesBuffer.CopyTo(outputBiasesBuffer);
+        }
+
+        public void InitNetwork(SerializableToyNeuralNetwork Net)
+        {
+            hiddenWeightsBuffer = device.Allocate2DDenseX(Net.hiddenWeights);
+            hiddenBiasesBuffer = device.Allocate1D(Net.hiddenBiases);
+            outputWeightsBuffer = device.Allocate2DDenseX(Net.outputWeights);
+            outputBiasesBuffer = device.Allocate1D(Net.outputBiases);
         }
 
         public float[] Forward(float[] inputs, bool returnResult = true)
@@ -200,6 +223,56 @@ namespace IanNet
         public void Dispose()
         {
             device.Dispose();
+            inputs = null;
+            hiddenWeights = null;
+            hiddenWeightsTransposed = null;
+            hiddenBiases = null;
+            hiddenNodes = null;
+            hiddenErrors = null;
+            hiddenGradients = null;
+            hiddenDeltas = null;
+            outputWeights = null;
+            outputWeightsTransposed = null;
+            outputBiases = null;
+            outputs = null;
+            outputErrors = null;
+            targets = null;
+            outputGradients = null;
+            outputDeltas = null;
+        }
+
+        public void Serialize(string Filepath)
+        {
+            // the idea is that after you serialize this, you dispose it, and this object becomes a shell that
+            // just holds the filepath to where its serialized contents are
+
+            // create the directory if it doesn't exist
+            System.IO.FileInfo file = new System.IO.FileInfo(Filepath);
+            file.Directory.Create(); // If the directory already exists, this method does nothing.
+
+            GetWeightsFromGpu();
+            var net = new SerializableToyNeuralNetwork()
+            {
+                learningRate = learningRate,
+                inputNodes = inputs.Length,
+                hiddenWeights = hiddenWeights,
+                hiddenBiases = hiddenBiases,
+                outputWeights = outputWeights,
+                outputBiases = outputBiases
+            };
+
+            string jsonString = JsonConvert.SerializeObject(net);
+            File.WriteAllText(Filepath, jsonString);
+
+            isSerialized = true;
+            serializedFilepath = Filepath;
+        }
+
+        public static ToyNeuralNetwork Deserialize(string Filepath)
+        {
+            string jsonString = File.ReadAllText(Filepath);
+            SerializableToyNeuralNetwork net = JsonConvert.DeserializeObject<SerializableToyNeuralNetwork>(jsonString);
+            return new ToyNeuralNetwork(net);
         }
     }
 }
