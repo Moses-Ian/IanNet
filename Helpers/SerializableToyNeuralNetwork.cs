@@ -14,5 +14,6 @@ namespace IanNet.Helpers
         public float[] hiddenBiases { get; set; }
         public float[,] outputWeights { get; set; }
         public float[] outputBiases { get; set; }
+        public float Score { get; set; }
     }
 }

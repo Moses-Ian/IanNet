@@ -77,15 +77,11 @@ namespace IanNet.Neat
 
         public void CalculateFitness()
         {
-            float totalScore = 0;
-
             // get the total of the scores
-            foreach (INeatable neatable in Neatables)
-                totalScore += neatable.Score;
+            float totalScore = Neatables.Sum(n => n.Score * n.Score);
 
             // calculate the fitness
-            foreach (INeatable neatable in Neatables)
-                neatable.Fitness = neatable.Score / totalScore;
+            Neatables.ForEach(n => n.Fitness = n.Score * n.Score / totalScore);
         }
 
         public INeatable PickOne()

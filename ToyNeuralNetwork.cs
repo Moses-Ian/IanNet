@@ -15,6 +15,7 @@ using IanNet.Neat;
 using IanNet.Helpers;
 using Newtonsoft.Json;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace IanNet
 {
@@ -30,6 +31,8 @@ namespace IanNet
 
         public bool isSerialized = false;
         public string serializedFilepath;
+        private string ScoreRegexPattern = @"""Score"":([\d\.]*)"; // "Score":([\d\.]*)
+
 
         #region The Memory on the Cpu
         // the memory on the cpu
@@ -84,6 +87,25 @@ namespace IanNet
             InitBuffers();
             CompileKernels();
             InitNetwork(Net);
+            Score = Net.Score;
+        }
+
+        /// <summary>
+        /// This version creates a shell that can be deserialized
+        /// </summary>
+        /// <param name="SerializedFilePath"></param>
+        public ToyNeuralNetwork(string SerializedFilePath)
+        {
+            string jsonString = File.ReadAllText(SerializedFilePath);
+            Match match = Regex.Match(jsonString, ScoreRegexPattern);
+
+            // I should do a more thorough check to make sure the file is valid
+            if (!match.Success)
+                throw new Exception("The provided file does not have a score");
+
+            Score = float.Parse(match.Groups[1].Value);
+            isSerialized = true;
+            serializedFilepath = SerializedFilePath;
         }
 
         public void InitCpu(int NumberOfInputs, int NumberOfHiddenNodes, int NumberOfOutputs)
@@ -247,9 +269,9 @@ namespace IanNet
             // just holds the filepath to where its serialized contents are
 
             // create the directory if it doesn't exist
-            System.IO.FileInfo file = new System.IO.FileInfo(Filepath);
-            file.Directory.Create(); // If the directory already exists, this method does nothing.
-
+            FileInfo file = new FileInfo(Filepath);
+            if (!Directory.Exists(Filepath))
+                file.Directory.Create(); // If the directory already exists, this method does nothing.
             GetWeightsFromGpu();
             var net = new SerializableToyNeuralNetwork()
             {
@@ -258,9 +280,9 @@ namespace IanNet
                 hiddenWeights = hiddenWeights,
                 hiddenBiases = hiddenBiases,
                 outputWeights = outputWeights,
-                outputBiases = outputBiases
+                outputBiases = outputBiases,
+                Score = Score,
             };
-
             string jsonString = JsonConvert.SerializeObject(net);
             File.WriteAllText(Filepath, jsonString);
 
