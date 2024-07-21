@@ -16,6 +16,8 @@ namespace IanNet.IanNet.Layers
 
         // architecture things
         Random random = new Random();
+        public float learningRate;
+        public float gradientClip = 0.1f;
 
         // core data
         public float[,] weights;
@@ -32,9 +34,10 @@ namespace IanNet.IanNet.Layers
         public float[] gradients;
         public float[] deltas;
 
-        public Layer(int NumberOfNodes)
+        public Layer(int NumberOfNodes, float learningRate = 0.1f)
         {
             this.NumberOfNodes = NumberOfNodes;
+            this.learningRate = learningRate;
         }
 
         public virtual void Compile(Accelerator device, MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -86,6 +89,40 @@ namespace IanNet.IanNet.Layers
             activationKernel(nodes.Length, nodesBuffer);
         }
 
+        /// <summary>
+        /// This should only be called by layers that extend OutputLayer
+        /// </summary>
+        public virtual void LoadTarget(object target)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void CalculateError()
+        {
+            // to get the error...
+            // transpose the weights...
+            transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
+            // ...and multiply them
+            multiplyKernel(NumberOfInputs, weightsTransposedBuffer, downstreamErrorsBuffer, errorsBuffer);
+        }
+
+        public virtual void BackPropogate()
+        {
+            // calculate gradient
+            gradientKernel(NumberOfNodes, nodesBuffer, gradientsBuffer);
+            elementMultiplyKernel(NumberOfNodes, errorsBuffer, gradientsBuffer, gradientsBuffer);
+            multiplyByLearningRateKernel(NumberOfNodes, gradientsBuffer, learningRate, gradientsBuffer);
+            //clipKernel(NumberOfNodes, gradientsBuffer, gradientClip, gradientsBuffer);
+
+            // calculate deltas
+            getDeltasKernel((NumberOfNodes, NumberOfInputs), gradientsBuffer, inputsBuffer, deltasBuffer);
+
+            // and update the weights
+            elementAdd2DKernel(GetIndex2D(weights), weightsBuffer, deltasBuffer, weightsBuffer);
+            // the biases are updated simply with the gradients
+            elementAdd1DKernel(NumberOfNodes, biasesBuffer, gradientsBuffer, biasesBuffer);
+        }
+
         #region Get Data
 
         public virtual float[,] GetWeights()
@@ -122,6 +159,33 @@ namespace IanNet.IanNet.Layers
 
             nodes = nodesBuffer.GetAsArray1D();
             return nodes;
+        }
+
+        public virtual object GetNodes()
+        {
+            if (nodesBuffer == null)
+                return null;
+
+            nodes = nodesBuffer.GetAsArray1D();
+            return nodes;
+        }
+
+        public virtual object GetErrors()
+        {
+            if (errorsBuffer == null)
+                return null;
+
+            errors = errorsBuffer.GetAsArray1D();
+            return errors;
+        }
+
+        public virtual object GetGradients()
+        {
+            if (gradientsBuffer == null)
+                return null;
+
+            gradients = gradientsBuffer.GetAsArray1D();
+            return gradients;
         }
 
         #endregion

@@ -50,6 +50,12 @@ namespace IanNet.IanNet
                 };
                 Layers[i].Compile(device, Layers[i-1].GetNodesBuffer(), options);
             }
+
+            // hook up the errors in reverse order
+            for (int i = Layers.Count - 2; i >= 1; i--)
+            {
+                Layers[i].SetDownstreamErrorsBuffer(Layers[i+1].GetErrorsBuffer());
+            }
         }
 
         public void InitGpu(bool forceCPU = false)
@@ -68,6 +74,21 @@ namespace IanNet.IanNet
                 return null;
 
             return Layers.Last().GetOutputs();
+        }
+
+        public void Train(object inputs, object target)
+        {
+            Forward(inputs, returnResult: false);
+
+            // run through the layers backwards
+            var outputLayer = Layers.AsEnumerable().Reverse().First();
+            outputLayer.LoadTarget(target);
+
+            Layers.AsEnumerable().Skip(1).Reverse().ToList().ForEach(layer =>
+            {
+                layer.CalculateError();
+                layer.BackPropogate();
+            });
         }
 
         public override string ToString()

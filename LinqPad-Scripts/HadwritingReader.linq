@@ -31,11 +31,19 @@ void Main()
 	var values = firstLine.Split(',');
 	int label = int.Parse(values[0]);
 	byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
+	for (int j=1; j<=10; j++)
+	{
+		for (int i=1; i<=10; i++)
+		{
+			Net.Train(pixels, Label._6);			
+		}
+		Label result = (Label) Net.Forward(pixels);
+		Console.WriteLine(result.ToString());
+		//Console.WriteLine(Net.Layers.Last().GetNodes());
+		//Console.WriteLine(Net.Layers.Last().GetErrors());
+	}
 	
-	Label result = (Label) Net.Forward(pixels);
-	
-	Console.WriteLine(result);
-	
+	Console.WriteLine("done");
 	CvInvoke.WaitKey(0);
 	CvInvoke.DestroyAllWindows();
 }
@@ -53,6 +61,7 @@ public Net MakeTheNetwork()
 	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
 	var outputLayer = new OutputLayer<Label>(numberOfLabels);
 	outputLayer.SetPostprocess(Postprocess);
+	outputLayer.SetBackPostprocess(BackPostprocess);
 	
 	net.AddLayer(inputLayer);
 	net.AddLayer(new Layer(50));
@@ -77,6 +86,14 @@ static Label Postprocess(float[] values)
     return (Label)maxIndex;
 }
 
+static float[] BackPostprocess(Label label)
+{
+	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
+	var result = new float[numberOfLabels];
+	result[(int)label] = 1;
+	return result;
+}
+
 // You can define other methods, fields, classes and namespaces here
 public void ShowTheFirstLetter()
 {
@@ -97,30 +114,14 @@ public void ShowTheFirstLetter()
 
 public enum Label
 {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
-    I,
-    J,
-    K,
-    L,
-    M,
-    N,
-    O,
-    P,
-    Q,
-    R,
-    S,
-    T,
-    U,
-    V,
-    W,
-    X,
-    Y,
-    Z
+	_0,
+    _1,
+	_2,
+	_3,
+	_4,
+	_5,
+	_6,
+	_7,
+	_8,
+	_9,
 }
