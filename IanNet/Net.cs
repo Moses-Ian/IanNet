@@ -4,15 +4,26 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IanNet.IanNet.Layers;
+using ILGPU.Runtime.Cuda;
+using ILGPU.Runtime.CPU;
+using ILGPU.Runtime;
+using ILGPU;
 
 namespace IanNet.IanNet
 {
     public class Net
     {
+        // gpu things
+        public Context context;
+        public Accelerator device;
+
+        // architecture things
+        public float learningRate;
         public List<Layer> Layers;
-        
-        public Net()
+
+        public Net(float learningRate = 0.1f)
         {
+            this.learningRate = learningRate;
             Layers = new List<Layer>();
         }
 
@@ -21,17 +32,42 @@ namespace IanNet.IanNet
             Layers.Add(layer);
         }
 
-        public void Compile()
+        public void Compile(Dictionary<string, string> Options = null)
         {
-            Layers.First().Compile();
+            // GPU
+            if (Options != null && Options.ContainsKey("ForceCPU"))
+                InitGpu(bool.Parse(Options["ForceCPU"]));
+            else
+                InitGpu();
+
+            // Compile the layers
+            Layers.First().Compile(device);
             for (int i = 1; i < Layers.Count; i++)
             {
                 var options = new Dictionary<string, string>()
                 {
-                    {  "NumberOfInputs", Layers[i - 1].NumberOfNodes.ToString() }
+                    {  "NumberOfInputs", Layers[i-1].NumberOfNodes.ToString() }
                 };
-                Layers[i].Compile(options);
+                Layers[i].Compile(device, Layers[i-1].GetNodesBuffer(), options);
             }
+        }
+
+        public void InitGpu(bool forceCPU = false)
+        {
+            // set up the gpu
+            context = Context.Create(builder => builder.Cuda().CPU().EnableAlgorithms());
+            device = context.GetPreferredDevice(forceCPU).CreateAccelerator(context);
+        }
+
+        public object Forward(object inputs, bool returnResult = true)
+        {
+            Layers.First().Load(inputs);
+            Layers.Skip(1).ToList().ForEach(l => l.Forward());
+
+            if (!returnResult)
+                return null;
+
+            return Layers.Last().GetOutputs();
         }
 
         public override string ToString()

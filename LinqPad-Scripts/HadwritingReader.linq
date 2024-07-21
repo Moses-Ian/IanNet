@@ -27,9 +27,17 @@ void Main()
 	Net.Compile();
 	Console.WriteLine("Compiled successfully");
 	
+	string firstLine = File.ReadLines(trainingFilepath).First();
+	var values = firstLine.Split(',');
+	int label = int.Parse(values[0]);
+	byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
 	
+	Label result = (Label) Net.Forward(pixels);
+	
+	Console.WriteLine(result);
 	
 	CvInvoke.WaitKey(0);
+	CvInvoke.DestroyAllWindows();
 }
 
 public string trainingFilepath = "F:/projects_csharp/handwriting-reader/datasets/mnist_train_small.csv";
@@ -39,12 +47,34 @@ public Net MakeTheNetwork()
 {
 	var net = new Net();
 	
-	net.AddLayer(new InputLayer(784));
+	var inputLayer = new InputLayer<byte[]>(784);
+	inputLayer.SetPreprocess(Preprocess);
+	
+	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
+	var outputLayer = new OutputLayer<Label>(numberOfLabels);
+	outputLayer.SetPostprocess(Postprocess);
+	
+	net.AddLayer(inputLayer);
 	net.AddLayer(new Layer(50));
-	net.AddLayer(new OutputLayer(26));
+	net.AddLayer(outputLayer);
 	
 	
 	return net;
+}
+
+static float[] Preprocess(byte[] pixels)
+{
+	return pixels.Select(p => p / 255.0f).ToArray();
+}
+
+static Label Postprocess(float[] values)
+{
+	int maxIndex = 0;
+    for (int i = 1; i < values.Length; i++)
+        if (values[i] > values[maxIndex])
+            maxIndex = i;
+
+    return (Label)maxIndex;
 }
 
 // You can define other methods, fields, classes and namespaces here
@@ -63,4 +93,34 @@ public void ShowTheFirstLetter()
     CvInvoke.Resize(image, scaledImage, newSize, 0, 0, Inter.Nearest);
 	
 	CvInvoke.Imshow($"{label}", scaledImage);
+}
+
+public enum Label
+{
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z
 }
