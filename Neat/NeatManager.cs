@@ -14,7 +14,7 @@ namespace IanNet.Neat
         public List<INeatable> Neatables;
         public int nextIndex = 0;
         public int generation = 0;
-        public int populationMax = 100;
+        public int populationMax = 250;
         Random random = new Random();
 
         public int population { get => Neatables.Count; }
@@ -72,6 +72,7 @@ namespace IanNet.Neat
 
             // update the next generation
             previousGeneration = Neatables;
+            //previousGeneration.Sort((x, y) => x.Fitness.CompareTo(y.Fitness));
             Neatables = new List<INeatable>();
         }
 
@@ -88,13 +89,14 @@ namespace IanNet.Neat
         {
             int index = 0;
             float r = (float)random.NextDouble();
-
+            
             while (r > 0)
             {
                 r = r - previousGeneration[index].Fitness;
                 index++;
             }
             index--;
+            //Console.WriteLine($"Parent: {index} Score: {previousGeneration[index].Score}");
             return previousGeneration[index];
         }
 

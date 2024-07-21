@@ -13,6 +13,9 @@ namespace IanNet
 {
     public partial class ToyNeuralNetwork
     {
+        private static readonly float mutationRate = 0.1f;
+        private static readonly float mutationDistance = 1f;
+
         // the kernels
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>, long> fillRandom1DKernel;
         public Action<Index2D, ArrayView2D<float, Stride2D.DenseX>, long> fillRandom2DKernel;
@@ -231,32 +234,32 @@ namespace IanNet
         private static void mutate1D(Index1D index, ArrayView1D<float, Stride1D.Dense> biases, long seed)
         {
             var random = new XorShift64Star((ulong)(index + seed));
-            if (random.NextFloat() < 0.1)
+            if (random.NextFloat() < mutationRate)
             {
                 float u1 = random.NextFloat();
                 float u2 = random.NextFloat();
 
                 // convert f into a random gaussian g -> Box-Muller Transform
                 // g ranges from -3 to +3
-                float g = MathF.Sqrt(-2.0f * MathF.Log(u1)) * MathF.Cos(2.0f * MathF.PI * u2);
+                float g = MathF.Sqrt(-2.0f * MathF.Log(u1)) * MathF.Cos(2.0f * MathF.PI * u2) / 3f;
 
-                biases[index] += g / 6f;
+                biases[index] += g * mutationDistance;
             }
         }
 
         private static void mutate2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> weights, long seed)
         {
             var random = new XorShift64Star((ulong)(index.X * weights.Extent.Y + index.Y + seed));
-            if (random.NextFloat() < 0.1)
+            if (random.NextFloat() < mutationRate)
             {
                 float u1 = random.NextFloat();
                 float u2 = random.NextFloat();
 
                 // convert f into a random gaussian g -> Box-Muller Transform
                 // g ranges from -3 to +3
-                float g = MathF.Sqrt(-2.0f * MathF.Log(u1)) * MathF.Cos(2.0f * MathF.PI * u2);
+                float g = MathF.Sqrt(-2.0f * MathF.Log(u1)) * MathF.Cos(2.0f * MathF.PI * u2) / 3f;
 
-                weights[index.X, index.Y] += g / 6f;
+                weights[index.X, index.Y] += g * mutationDistance;
             }
         }
     }

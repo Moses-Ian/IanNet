@@ -16,6 +16,7 @@ void Main()
 {
 	try
 	{
+		Console.WriteLine("Please wait 12 or so seconds...");
 		ToyNeuralNetwork brain = new ToyNeuralNetwork(2, 4, 1);
 		
 		TrainingData[] trainingData = new TrainingData[]

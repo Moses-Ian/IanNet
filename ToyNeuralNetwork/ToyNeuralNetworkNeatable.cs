@@ -13,6 +13,8 @@ namespace IanNet
         public float Score { get; set; }
         public float Fitness { get; set; }
 
+        private string ScoreRegexPattern = @"""Score"": ?(-?[\d\.]*)"; // "Score": ?(-?[\d\.]*)
+
         public INeatable Copy()
         {
             if (isSerialized)

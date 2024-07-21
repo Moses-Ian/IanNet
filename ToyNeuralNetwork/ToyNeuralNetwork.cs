@@ -1,5 +1,8 @@
 ﻿// https://www.youtube.com/watch?v=IlmNhFxre0w&list=PLRqwX-V7Uu6aCibgK1PTWWu9by6XFdCfh&index=5
 // This is a simple network with 1 hidden layer, where you can specify the number of inputs, hidden nodes, and outputs
+// TODO:
+//   when you pass in a previous neural network, you should all of the same buffers
+//   maybe make it an option to create new buffers
 
 using ILGPU.Runtime;
 using ILGPU;
@@ -25,13 +28,13 @@ namespace IanNet
         public Context context;
         public Accelerator device;
 
+        // architecture info
         public int outputsLength;
         public float learningRate;
         Random random = new Random();
 
         public bool isSerialized = false;
         public string serializedFilepath;
-        private string ScoreRegexPattern = @"""Score"":([\d\.]*)"; // "Score":([\d\.]*)
 
 
         #region The Memory on the Cpu
@@ -160,14 +163,18 @@ namespace IanNet
             outputBiasesBuffer = device.Allocate1D(Net.outputBiases);
         }
 
-        public float[] Forward(float[] inputs, bool returnResult = true)
+        public float[] Forward(float[] inputs, bool returnResult = true, bool saveInputs = false)
         {
+            if (isSerialized)
+                throw new Exception("Cannot call Forward() while serialized");
+
             if (inputs.Length != this.inputs.Length)
                 throw new Exception(string.Format("Input length ({0}) does not match expected input length ({1})", inputs.Length, this.inputs.Length));
 
             // copies the inputs to the gpu
-            inputs.CopyTo(this.inputs, 0);
-            inputsBuffer = device.Allocate1D(inputs);
+            if (saveInputs)
+                inputs.CopyTo(this.inputs, 0);
+            inputsBuffer.CopyFromCPU(inputs);
 
             // run the kernels
             forwardKernel(hiddenNodes.Length, inputsBuffer, hiddenWeightsBuffer, hiddenBiasesBuffer, hiddenNodesBuffer);
