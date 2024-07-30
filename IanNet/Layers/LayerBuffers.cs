@@ -59,6 +59,11 @@ namespace IanNet.IanNet.Layers
 
         #region Get Buffers
 
+        public virtual MemoryBuffer1D<float, Stride1D.Dense> GetInputsBuffer()
+        {
+            return inputsBuffer;
+        }
+
         public virtual MemoryBuffer1D<float, Stride1D.Dense> GetNodesBuffer()
         {
             return nodesBuffer;
@@ -73,13 +78,17 @@ namespace IanNet.IanNet.Layers
 
         #region Set Buffers
 
+        public virtual void SetInputsBuffer(MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer)
+        {
+            this.inputsBuffer = inputsBuffer;
+        }
+
         public virtual void SetDownstreamErrorsBuffer(MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer)
         {
             this.downstreamErrorsBuffer = downstreamErrorsBuffer;
         }
 
         #endregion
-
 
 
     }

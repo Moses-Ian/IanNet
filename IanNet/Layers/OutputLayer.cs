@@ -12,7 +12,7 @@ namespace IanNet.IanNet.Layers
         public delegate T PostprocessDelegate(float[] values);
         public PostprocessDelegate Postprocess;
         public delegate float[] BackPostprocessDelegate(T values);
-        public BackPostprocessDelegate BackPostprocess;
+        private BackPostprocessDelegate _BackPostprocess;
 
         public OutputLayer(int NumberOfOutputs, float learningRate = 0.1f)
             : base(NumberOfOutputs, learningRate)
@@ -27,7 +27,7 @@ namespace IanNet.IanNet.Layers
 
         public void SetBackPostprocess(BackPostprocessDelegate backPostprocess)
         {
-            BackPostprocess = backPostprocess;
+            _BackPostprocess = backPostprocess;
         }
 
         public override void Forward()
@@ -48,13 +48,18 @@ namespace IanNet.IanNet.Layers
 
         public override void LoadTarget(object target)
         {
-            float[] targets = BackPostprocess((T)target);
+            float[] targets = _BackPostprocess((T)target);
             targetsBuffer.CopyFromCPU(targets);
         }
 
         public override void CalculateError()
         {
             getErrorKernel(NumberOfNodes, nodesBuffer, targetsBuffer, errorsBuffer);
+        }
+
+        public override float[] BackPostprocess(object values)
+        {
+            return _BackPostprocess((T) values);
         }
 
         public override string ToString()

@@ -89,6 +89,13 @@ namespace IanNet.IanNet.Layers
             activationKernel(nodes.Length, nodesBuffer);
         }
 
+        public virtual void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
+        {
+            // run the kernels
+            forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
+            activationKernel(nodes.Length, nodesBuffer);
+        }
+
         /// <summary>
         /// This should only be called by layers that extend OutputLayer
         /// </summary>
@@ -194,5 +201,19 @@ namespace IanNet.IanNet.Layers
         {
             return $"Layer with {NumberOfNodes} nodes. ";
         }
+
+        #region Methods that need to be overridden
+
+        public virtual float[] Preprocess(object obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual float[] BackPostprocess(object obj)
+        {
+            throw new NotImplementedException(); 
+        }
+
+        #endregion
     }
 }

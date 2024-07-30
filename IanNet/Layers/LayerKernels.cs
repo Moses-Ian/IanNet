@@ -20,6 +20,13 @@ namespace IanNet.IanNet.Layers
             ArrayView2D<float, Stride2D.DenseX>,
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>> forwardKernel;
+        public Action<
+            Index1D,
+            ArrayView2D<float, Stride2D.DenseX>,
+            int,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>> forwardBatchKernel;
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> activationKernel;
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>, ArrayView1D<float, Stride1D.Dense>> gradientKernel;
         public Action<
@@ -78,6 +85,13 @@ namespace IanNet.IanNet.Layers
                 ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(forward);
+            forwardBatchKernel = device.LoadAutoGroupedStreamKernel<
+                Index1D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                int,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>>(forwardBatch);
             activationKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(sigmoid);
             gradientKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>, ArrayView1D<float, Stride1D.Dense>>(sigmoidPrime);
             getErrorKernel = device.LoadAutoGroupedStreamKernel<
@@ -153,6 +167,15 @@ namespace IanNet.IanNet.Layers
             float sum = 0;
             for (var i = 0; i < inputs.Length; i++)
                 sum += inputs[i] * weights[node, i];
+            sum += biases[node];
+            output[node] = sum;
+        }
+
+        private static void forwardBatch(Index1D node, ArrayView2D<float, Stride2D.DenseX> inputBatch, int index, ArrayView2D<float, Stride2D.DenseX> weights, ArrayView1D<float, Stride1D.Dense> biases, ArrayView1D<float, Stride1D.Dense> output)
+        {
+            float sum = 0;
+            for (var i = 0; i < inputBatch.Extent.X; i++)
+                sum += inputBatch[i, index] * weights[node, i];
             sum += biases[node];
             output[node] = sum;
         }

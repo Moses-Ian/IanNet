@@ -11,7 +11,7 @@ namespace IanNet.IanNet.Layers
     public class InputLayer<T> : Layer
     {
         public delegate float[] PreprocessDelegate(T input);
-        public PreprocessDelegate Preprocess;
+        private PreprocessDelegate _Preprocess;
 
         public InputLayer(int NumberOfInputs, float learningRate = 0.1f)
             : base(NumberOfInputs, learningRate)
@@ -59,10 +59,10 @@ namespace IanNet.IanNet.Layers
 
         public override void Load(object input)
         {
-            if (Preprocess == null)
+            if (_Preprocess == null)
                 throw new Exception("No Preprocess method defined.");
 
-            float[] result = Preprocess((T) input);
+            float[] result = _Preprocess((T) input);
             inputsBuffer.CopyFromCPU(result);
         }
 
@@ -70,7 +70,7 @@ namespace IanNet.IanNet.Layers
 
         public void SetPreprocess(PreprocessDelegate preprocess)
         {
-            Preprocess = preprocess;
+            _Preprocess = preprocess;
         }
 
         public override object GetOutputs()
@@ -82,7 +82,10 @@ namespace IanNet.IanNet.Layers
             return inputs;
         }
 
-
+        public override float[] Preprocess(object inputs)
+        {
+            return _Preprocess((T) inputs);
+        }
 
         public override string ToString()
         {
