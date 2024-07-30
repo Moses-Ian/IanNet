@@ -91,6 +91,18 @@ namespace IanNet.IanNet
             });
         }
 
+        public void Train(LabelledBatch<Tuple<object, object>> batch, int epochs)
+        {
+            // for now, just run them through. we'll refactor after it's working
+            for (int i = 0; i < epochs; i++)
+            {
+                foreach (var tuple in batch)
+                {
+                    Train(tuple.Item1, tuple.Item2);
+                }
+            }
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();

@@ -31,16 +31,39 @@ void Main()
 	var values = firstLine.Split(',');
 	int label = int.Parse(values[0]);
 	byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
+	Image image = new Image() { pixels = pixels };
+	
+	var batch = new LabelledBatch<Tuple<object, object>>();
+	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(100);
+	foreach(var line in lines)
+	{
+		values = line.Split(',');
+		label = int.Parse(values[0]);
+		byte[] pix = values.Skip(1).Select(byte.Parse).ToArray();
+		batch.Add(new Tuple<object, object>(new Image() { pixels = pix }, (Label) label));
+	}
+	
+	for (int j=0; j<10; j++)
+	{
+		for (int i=0; i<10; i++)
+		{
+			Net.Train(batch);
+		}
+		Label result = (Label) Net.Forward(image);
+		Console.WriteLine(result.ToString());
+	}
+	
+	
+	
+	
 	for (int j=1; j<=10; j++)
 	{
 		for (int i=1; i<=10; i++)
 		{
-			Net.Train(pixels, Label._6);			
+			Net.Train(image, Label._6);			
 		}
-		Label result = (Label) Net.Forward(pixels);
+		Label result = (Label) Net.Forward(image);
 		Console.WriteLine(result.ToString());
-		//Console.WriteLine(Net.Layers.Last().GetNodes());
-		//Console.WriteLine(Net.Layers.Last().GetErrors());
 	}
 	
 	Console.WriteLine("done");
@@ -55,7 +78,7 @@ public Net MakeTheNetwork()
 {
 	var net = new Net();
 	
-	var inputLayer = new InputLayer<byte[]>(784);
+	var inputLayer = new InputLayer<Image>(784);
 	inputLayer.SetPreprocess(Preprocess);
 	
 	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
@@ -71,9 +94,9 @@ public Net MakeTheNetwork()
 	return net;
 }
 
-static float[] Preprocess(byte[] pixels)
+static float[] Preprocess(Image image)
 {
-	return pixels.Select(p => p / 255.0f).ToArray();
+	return image.pixels.Select(p => p / 255.0f).ToArray();
 }
 
 static Label Postprocess(float[] values)
@@ -110,6 +133,11 @@ public void ShowTheFirstLetter()
     CvInvoke.Resize(image, scaledImage, newSize, 0, 0, Inter.Nearest);
 	
 	CvInvoke.Imshow($"{label}", scaledImage);
+}
+
+public struct Image
+{
+	public byte[] pixels;
 }
 
 public enum Label
