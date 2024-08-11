@@ -71,7 +71,6 @@ namespace IanNet.IanNet
 
             // drawing the vertical lines
             int step = Epochs.Count / 10 >= 1 ? Epochs.Count / 10 : 1;
-            Console.WriteLine(step);
             for (int i = 1; i < Epochs.Count; i += step)
             {
                 int x1 = (int)((Epochs[i - 1].Number / (float)maxEpoch) * (width - 1));
@@ -147,12 +146,5 @@ namespace IanNet.IanNet
             //    }
             //}
         }
-    }
-
-    public class Epoch
-    {
-        public int Number;
-        public float Accuracy;
-        public float Loss;
     }
 }

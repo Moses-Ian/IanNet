@@ -29,6 +29,7 @@ namespace IanNet.IanNet
 
         // history
         public History history;
+        public EarlyStopping earlyStopping;
 
         public Net(float learningRate = 0.1f)
         {
@@ -92,11 +93,6 @@ namespace IanNet.IanNet
             return Layers.Last().GetOutputs();
         }
 
-        //private void Forward(MemoryBuffer1D<float, Stride1D.Dense> inputs)
-        //{
-        //    Layers.First().LoadBuffer(inputs);
-        //}
-
         public void Train(object inputs, object target)
         {
             Forward(inputs, returnResult: false);
@@ -112,38 +108,20 @@ namespace IanNet.IanNet
             });
         }
 
-        public void Train(LabelledBatch<Tuple<object, object>> batch, int epochs, bool oldWay = false, List<string> track = null)
+        public void Train(LabelledBatch<Tuple<object, object>> batch, TrainingOptions options = null)
         {
-            int currentEpoch = history.Epochs.Count + 1;
-            bool trackAccuracy = false;
-            bool trackLoss = false;
-            if (track != null)
-            {
-                trackAccuracy = track.Contains("Accuracy");
-                trackLoss = track.Contains("Loss");
-            }
+            // if the options is null, then use the defaults
+            if (options == null)
+                options = new TrainingOptions();
 
-            #region oldWay
-            if (oldWay)
-            {
-                // for now, just run them through. we'll refactor after it's working
-                for (int i = 0; i < epochs; i++)
-                {
-                    foreach (var tuple in batch)
-                    {
-                        Train(tuple.Item1, tuple.Item2);
-                    }
-                }
-                return;
-            }
-            #endregion
-
-            var numberOfItems = batch.Count();
-
-            var inputLayer = Layers.First();
-            var outputLayer = Layers.Last();
-
-            for (int epoch = 0; epoch < epochs; epoch++)
+            // keep the history in the event of several calls to Train
+            int currentEpoch;
+            if (history.Epochs.Count > 0)
+                currentEpoch = history.Epochs.Last().Number + 1;    // yeah, if the last few epochs weren't recorded, then this'll be off, but who would not make epochs a multiple of step size?
+            else
+                currentEpoch = 1;
+            
+            for (int epoch = 0; epoch < options.Epochs; epoch++)
             {
                 /*  // Commented because this SHOULD reduce transfer time, but I clearly am misunderstanding something
                 IEnumerable<float[]> items = batch.Select(item => inputLayer.Preprocess(item.Item1));
@@ -182,16 +160,23 @@ namespace IanNet.IanNet
                 }
                 
                 // history
-                var epochStats = new Epoch() { Number = currentEpoch };
-                if (track != null)
+                if (options.HistoryStepSize > 0 && currentEpoch % options.HistoryStepSize == 0)
                 {
-                    if (trackAccuracy) epochStats.Accuracy = GetAccuracy(batch);
-                    if (trackLoss) epochStats.Loss = GetLoss(batch);
+                    var epochStats = new Epoch() { Number = currentEpoch };
+                    if (options.TrackAccuracy) epochStats.Accuracy = GetAccuracy(batch);
+                    if (options.TrackLoss) epochStats.Loss = GetLoss(batch);
+                    history.Add(epochStats);
+
+                    // early stopping
+                    if (earlyStopping != null && earlyStopping.CheckStop(epochStats))
+                        return;
                 }
-                history.Add(epochStats);
+                
                 currentEpoch++;
-                if (float.IsNaN(epochStats.Loss))
-                    return;
+
+                // early stopping
+                //if (float.IsNaN(epochStats.Loss))
+                //    return;
             }
         }
 
@@ -243,6 +228,11 @@ namespace IanNet.IanNet
 
             // load it to the gpu
             targetBatch.CopyFromCPU(targets);
+        }
+
+        public void SetEarlyStopping(EarlyStopping earlyStopping)
+        {
+            this.earlyStopping = earlyStopping;
         }
 
         public override string ToString()
