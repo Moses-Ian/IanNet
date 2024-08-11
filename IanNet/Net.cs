@@ -9,6 +9,7 @@ using ILGPU.Runtime.CPU;
 using ILGPU.Runtime;
 using ILGPU;
 using ILGPU.Runtime.OpenCL;
+using IanNet.IanNet.Batch;
 
 namespace IanNet.IanNet
 {
@@ -26,10 +27,14 @@ namespace IanNet.IanNet
         MemoryBuffer2D<float, Stride2D.DenseX> inputBatch;
         MemoryBuffer2D<float, Stride2D.DenseX> targetBatch;
 
+        // history
+        public History history;
+
         public Net(float learningRate = 0.1f)
         {
             this.learningRate = learningRate;
             Layers = new List<Layer>();
+            history = new History();
         }
 
         public void AddLayer(Layer layer)
@@ -107,8 +112,17 @@ namespace IanNet.IanNet
             });
         }
 
-        public void Train(LabelledBatch<Tuple<object, object>> batch, int epochs, bool oldWay = false)
+        public void Train(LabelledBatch<Tuple<object, object>> batch, int epochs, bool oldWay = false, List<string> track = null)
         {
+            int currentEpoch = history.Epochs.Count + 1;
+            bool trackAccuracy = false;
+            bool trackLoss = false;
+            if (track != null)
+            {
+                trackAccuracy = track.Contains("Accuracy");
+                trackLoss = track.Contains("Loss");
+            }
+
             #region oldWay
             if (oldWay)
             {
@@ -124,24 +138,24 @@ namespace IanNet.IanNet
             }
             #endregion
 
-            var height = batch.Count();
+            var numberOfItems = batch.Count();
 
             var inputLayer = Layers.First();
-            IEnumerable<float[]> items = batch.Select(item => inputLayer.Preprocess(item.Item1));
-            var inputWidth = items.First().Length;
-
             var outputLayer = Layers.Last();
-            IEnumerable<float[]> targets = batch.Select(item => outputLayer.BackPostprocess(item.Item2));
-            var outputWidth = targets.First().Length;
-
-            LoadInputs(items);
-
-            LoadTargets(targets);
 
             for (int epoch = 0; epoch < epochs; epoch++)
             {
+                /*  // Commented because this SHOULD reduce transfer time, but I clearly am misunderstanding something
+                IEnumerable<float[]> items = batch.Select(item => inputLayer.Preprocess(item.Item1));
+                IEnumerable<float[]> targets = batch.Select(item => outputLayer.BackPostprocess(item.Item2));
+                var inputWidth = items.First().Length;
+                var outputWidth = targets.First().Length;
+
+                LoadInputs(items);
+                LoadTargets(targets);
+
                 // now train on one batch at a time
-                for (int i = 0; i < height; i++)
+                for (int i = 0; i < numberOfItems; i++)
                 {
                     Layers.Skip(1).Take(1).First().Forward(inputBatch, i);
 
@@ -151,8 +165,8 @@ namespace IanNet.IanNet
                     var row = targetBatch.View.To1DView().SubView(i, outputWidth);
 
                     // copy from the target batch to the target
-                    copyKernel(outputLayer.nodes.Length, row, Layers.Last().GetNodesBuffer());
-                    
+                    copyKernel(outputLayer.nodes.Length, row, Layers.Last().GetTargetsBuffer());
+
                     // backpropogate
                     Layers.AsEnumerable().Skip(1).Reverse().ToList().ForEach(layer =>
                     {
@@ -160,6 +174,24 @@ namespace IanNet.IanNet
                         layer.BackPropogate();
                     });
                 }
+                */
+
+                foreach (var tuple in batch)
+                {
+                    Train(tuple.Item1, tuple.Item2);
+                }
+                
+                // history
+                var epochStats = new Epoch() { Number = currentEpoch };
+                if (track != null)
+                {
+                    if (trackAccuracy) epochStats.Accuracy = GetAccuracy(batch);
+                    if (trackLoss) epochStats.Loss = GetLoss(batch);
+                }
+                history.Add(epochStats);
+                currentEpoch++;
+                if (float.IsNaN(epochStats.Loss))
+                    return;
             }
         }
 
@@ -234,6 +266,55 @@ namespace IanNet.IanNet
         private static void copy(Index1D index, ArrayView1D<float, Stride1D.General> source, ArrayView1D<float, Stride1D.Dense> destination)
         {
             destination[index] = source[index];
+        }
+
+        #endregion
+
+        #region History
+
+        /// <summary>
+        /// Assumptions: The label should override Equals().
+        /// </summary>
+        /// <returns></returns>
+        public float GetAccuracy(LabelledBatch<Tuple<object, object>> batch)
+        {
+            if (batch.Count() == 0)
+                throw new Exception("No items in batch");
+
+            float accuracy = 0f;
+            foreach (var item in batch)
+            {
+                object input = item.Item1;
+                object target = item.Item2;
+
+                object guess = Forward(input);
+
+                accuracy += guess.Equals(target) ? 1 : 0;
+            }
+
+            return accuracy / batch.Count();
+        }
+
+        public float GetLoss(LabelledBatch<Tuple<object, object>> batch)
+        {
+            if (batch.Count() == 0)
+                throw new Exception("No items in batch");
+
+            float loss = 0f;
+            foreach (var item in batch)
+            {
+                object input = item.Item1;
+                object target = item.Item2;
+
+                object guess = Forward(input);
+
+                float[] values = Layers.Last().GetErrors();
+
+                foreach (var error in Layers.Last().GetErrors())
+                    loss += Math.Abs(error);
+            }
+
+            return loss;
         }
 
         #endregion

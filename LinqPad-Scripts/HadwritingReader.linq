@@ -14,12 +14,17 @@
   <Namespace>Emgu.CV.Structure</Namespace>
   <Namespace>IanNet</Namespace>
   <Namespace>IanNet.IanNet</Namespace>
+  <Namespace>IanNet.IanNet.Batch</Namespace>
   <Namespace>IanNet.IanNet.Layers</Namespace>
   <Namespace>System.Drawing</Namespace>
 </Query>
 
 void Main()
 {
+	int epochs=2000;
+	int take=2;
+	bool oldWay = false;
+
 	ShowTheFirstLetter();
 	var Net = MakeTheNetwork();
 	Console.WriteLine(Net.ToString());
@@ -34,7 +39,7 @@ void Main()
 	Image image = new Image() { pixels = pixels };
 	
 	var batch = new LabelledBatch<Tuple<object, object>>();
-	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(100);
+	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(take);
 	foreach(var line in lines)
 	{
 		values = line.Split(',');
@@ -43,28 +48,49 @@ void Main()
 		batch.Add(new Tuple<object, object>(new Image() { pixels = pix }, (Label) label));
 	}
 	
-	for (int j=0; j<10; j++)
+	var stopwatch = new Stopwatch();
+	stopwatch.Start();
+
+	// big learning rate
+	Net.Train(batch, epochs: epochs, track: new List<string> { "Accuracy", "Loss" });
+	
+	// small learning rate
+	//Net.Layers.ForEach(layer => layer.learningRate = 1f);
+	//Net.Train(batch, epochs: epochs, track: new List<string> { "Accuracy", "Loss" });
+	
+	
+	Label result = (Label) Net.Forward(image);
+	Console.WriteLine(result.ToString());
+	
+	stopwatch.Stop();
+	Console.WriteLine($"Training took {stopwatch.ElapsedMilliseconds} ms");
+	
+	var graph = Net.history.ToAccuracyGraph(400, 200);
+	
+	var graphImage = new Image<Gray, Byte>(graph.GetLength(1), graph.GetLength(0));
+	for(int x=0; x<graph.GetLength(1); x++)
 	{
-		for (int i=0; i<10; i++)
+		for(int y=0; y<graph.GetLength(0); y++)
 		{
-			Net.Train(batch);
+			graphImage.Data[y, x, 0] = graph[y, x];
 		}
-		Label result = (Label) Net.Forward(image);
-		Console.WriteLine(result.ToString());
 	}
 	
+	Console.WriteLine(Net.history.Epochs);
+	var graph2 = Net.history.ToLossGraph(400, 200);
 	
-	
-	
-	for (int j=1; j<=10; j++)
+	var graphImage2 = new Image<Gray, Byte>(graph.GetLength(1), graph.GetLength(0));
+	for(int x=0; x<graph.GetLength(1); x++)
 	{
-		for (int i=1; i<=10; i++)
+		for(int y=0; y<graph.GetLength(0); y++)
 		{
-			Net.Train(image, Label._6);			
+			graphImage2.Data[y, x, 0] = graph2[y, x];
 		}
-		Label result = (Label) Net.Forward(image);
-		Console.WriteLine(result.ToString());
 	}
+	
+	CvInvoke.Imshow("Accuracy Graph", graphImage);
+	CvInvoke.Imshow("Loss Graph", graphImage2);
+	//Console.WriteLine(Net.history.Epochs);
 	
 	Console.WriteLine("done");
 	CvInvoke.WaitKey(0);
@@ -77,17 +103,27 @@ public int scale = 8;
 public Net MakeTheNetwork()
 {
 	var net = new Net();
+	var learningRate = 0.11f;
 	
 	var inputLayer = new InputLayer<Image>(784);
 	inputLayer.SetPreprocess(Preprocess);
+	inputLayer.learningRate = learningRate;
+	
+	var hiddenLayer1 = new Layer(100);
+	hiddenLayer1.learningRate = learningRate;
+	
+	var hiddenLayer2 = new Layer(50);
+	hiddenLayer2.learningRate = learningRate;
 	
 	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
 	var outputLayer = new OutputLayer<Label>(numberOfLabels);
 	outputLayer.SetPostprocess(Postprocess);
 	outputLayer.SetBackPostprocess(BackPostprocess);
+	outputLayer.learningRate = learningRate;
 	
 	net.AddLayer(inputLayer);
-	net.AddLayer(new Layer(50));
+	net.AddLayer(hiddenLayer1);
+	net.AddLayer(hiddenLayer2);
 	net.AddLayer(outputLayer);
 	
 	

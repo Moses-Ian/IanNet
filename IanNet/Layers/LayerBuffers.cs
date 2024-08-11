@@ -74,6 +74,11 @@ namespace IanNet.IanNet.Layers
             return errorsBuffer;
         }
 
+        public virtual MemoryBuffer1D<float, Stride1D.Dense> GetTargetsBuffer()
+        {
+            return targetsBuffer;
+        }
+
         #endregion
 
         #region Set Buffers

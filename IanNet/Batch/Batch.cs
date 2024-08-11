@@ -8,30 +8,39 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IanNet.IanNet
+namespace IanNet.IanNet.Batch
 {
     public class Batch<T> : IEnumerable<T>
     {
         List<T> list;
+        public bool randomize;
 
-        public Batch()
+        public Batch(bool randomize = true)
         {
             list = new List<T>();
+            this.randomize = randomize;
         }
 
-        public Batch(IEnumerable<T> items)
+        public Batch(IEnumerable<T> items, bool randomize = true)
         {
             list = items.ToList();
+            this.randomize = randomize;
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            return list.GetEnumerator();
+            if (randomize)
+                return new RandomEnumerator<T>(list);
+            else
+                return list.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.GetEnumerator();
+            if (randomize)
+                return new RandomEnumerator<T>(list);
+            else
+                return GetEnumerator();
         }
 
         public void Add(T item)
