@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ILGPU.Runtime;
 using ILGPU;
 using ILGPU.Runtime.Cuda;
+using IanNet.IanNet.Optimizers;
 
 namespace IanNet.IanNet.Layers
 {
@@ -18,6 +19,7 @@ namespace IanNet.IanNet.Layers
         Random random = new Random();
         public float learningRate;
         public float gradientClip = 0.1f;
+        IOptimizer optimizer;
 
         // core data
         public float[,] weights;
@@ -31,28 +33,40 @@ namespace IanNet.IanNet.Layers
         // derived data
         public float[,] weightsTransposed;
         public float[] errors;
-        public float[] gradients;
-        public float[,] deltas;
 
         public Layer(int NumberOfNodes, float learningRate = 0.1f)
         {
             this.NumberOfNodes = NumberOfNodes;
             this.learningRate = learningRate;
+            optimizer = new StochasticGradientDescent(NumberOfNodes, learningRate);
         }
 
         public virtual void Compile(Accelerator device, MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null, Dictionary<string, string> Options = null)
         {
-            this.device = device;
-            this.Options = Options;
-            NumberOfInputs = int.Parse(Options["NumberOfInputs"]);
-
+            InitGpu(device, Options);
+            optimizer.InitGpu(device, Options);
+            
             InitCpu();
 
             InitBuffers(inputsBuffer);
+            optimizer.InitBuffers();
+            optimizer.SetNodesBuffer(nodesBuffer);
+            optimizer.SetErrorsBuffer(errorsBuffer);
+            optimizer.SetInputsBuffer(inputsBuffer);
+            optimizer.SetWeightsBuffer(weightsBuffer);
+            optimizer.SetBiasesBuffer(biasesBuffer);
 
             CompileKernels();
+            optimizer.CompileKernels();
 
             InitNetwork();
+        }
+
+        public virtual void InitGpu(Accelerator device, Dictionary<string, string> Options = null)
+        {
+            this.device = device;
+            this.Options = Options;
+            NumberOfInputs = int.Parse(Options["NumberOfInputs"]);
         }
 
         public virtual void InitCpu()
@@ -64,8 +78,6 @@ namespace IanNet.IanNet.Layers
 
             weightsTransposed = new float[NumberOfInputs, NumberOfNodes];
             errors = new float[NumberOfNodes];
-            gradients = new float[NumberOfNodes];
-            deltas = new float[NumberOfNodes, NumberOfInputs];
         }
 
         public virtual void InitNetwork()
@@ -109,24 +121,13 @@ namespace IanNet.IanNet.Layers
             // to get the error...
             // transpose the weights...
             transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
-            // ...and multiply them
+            // ...and multiply the weights by the previous error
             multiplyKernel(NumberOfInputs, weightsTransposedBuffer, downstreamErrorsBuffer, errorsBuffer);
         }
 
         public virtual void BackPropogate()
         {
-            // calculate gradient
-            gradientKernel(NumberOfNodes, nodesBuffer, gradientsBuffer);
-            elementMultiplyKernel(NumberOfNodes, errorsBuffer, gradientsBuffer, gradientsBuffer);
-            multiplyByLearningRateKernel(NumberOfNodes, gradientsBuffer, learningRate, gradientsBuffer);
-
-            // calculate deltas
-            getDeltasKernel((NumberOfNodes, NumberOfInputs), gradientsBuffer, inputsBuffer, deltasBuffer);
-
-            // and update the weights
-            elementAdd2DKernel(GetIndex2D(weights), weightsBuffer, deltasBuffer, weightsBuffer);
-            // the biases are updated simply with the gradients
-            elementAdd1DKernel(NumberOfNodes, biasesBuffer, gradientsBuffer, biasesBuffer);
+            optimizer.BackPropogate();
         }
 
         #region Get Data
@@ -183,24 +184,6 @@ namespace IanNet.IanNet.Layers
 
             errors = errorsBuffer.GetAsArray1D();
             return errors;
-        }
-
-        public virtual float[] GetGradients()
-        {
-            if (gradientsBuffer == null)
-                return null;
-
-            gradients = gradientsBuffer.GetAsArray1D();
-            return gradients;
-        }
-
-        public virtual float[,] GetDeltas()
-        {
-            if (deltasBuffer == null)
-                return null;
-
-            deltas = deltasBuffer.GetAsArray2D();
-            return deltas;
         }
 
         #endregion

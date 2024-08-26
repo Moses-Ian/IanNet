@@ -1,4 +1,6 @@
-﻿using System;
+﻿// TODO: implement mini-batching in Train
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
