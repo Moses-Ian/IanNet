@@ -13,8 +13,8 @@ namespace IanNet.IanNet.Layers
         public delegate float[] PreprocessDelegate(T input);
         private PreprocessDelegate _Preprocess;
 
-        public InputLayer(int NumberOfInputs, float learningRate = 0.1f)
-            : base(NumberOfInputs, learningRate)
+        public InputLayer(int NumberOfInputs)
+            : base(NumberOfInputs)
         {
             this.NumberOfInputs = NumberOfInputs;
         }

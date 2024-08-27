@@ -14,8 +14,8 @@ namespace IanNet.IanNet.Layers
         public delegate float[] BackPostprocessDelegate(T values);
         private BackPostprocessDelegate _BackPostprocess;
 
-        public OutputLayer(int NumberOfOutputs, float learningRate = 0.1f)
-            : base(NumberOfOutputs, learningRate)
+        public OutputLayer(int NumberOfOutputs)
+            : base(NumberOfOutputs)
         {
 
         }

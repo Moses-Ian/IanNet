@@ -11,6 +11,7 @@ namespace IanNet.IanNet.Optimizers
     public interface IOptimizer
     {
         public void BackPropogate();
+        public void SetNumberOfNodes(int numberOfNodes);
         public void SetNodesBuffer(MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer);
         public void SetErrorsBuffer(MemoryBuffer1D<float, Stride1D.Dense> errorsBuffer);
         public void SetInputsBuffer(MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer);

@@ -17,7 +17,6 @@ namespace IanNet.IanNet.Layers
 
         // architecture things
         Random random = new Random();
-        public float learningRate;
         public float gradientClip = 0.1f;
         IOptimizer optimizer;
 
@@ -34,11 +33,13 @@ namespace IanNet.IanNet.Layers
         public float[,] weightsTransposed;
         public float[] errors;
 
-        public Layer(int NumberOfNodes, float learningRate = 0.1f)
+        public Layer(int NumberOfNodes, IOptimizer optimizer = null)
         {
             this.NumberOfNodes = NumberOfNodes;
-            this.learningRate = learningRate;
-            optimizer = new StochasticGradientDescent(NumberOfNodes, learningRate);
+
+            // in case the dev wants to use the default
+            this.optimizer = optimizer ?? new StochasticGradientDescent(0.1f);
+            this.optimizer.SetNumberOfNodes(NumberOfNodes);
         }
 
         public virtual void Compile(Accelerator device, MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -128,6 +129,12 @@ namespace IanNet.IanNet.Layers
         public virtual void BackPropogate()
         {
             optimizer.BackPropogate();
+        }
+
+        public void SetOptimizer(IOptimizer optimizer)
+        {
+            this.optimizer = optimizer;
+            optimizer.SetNumberOfNodes(NumberOfNodes);
         }
 
         #region Get Data

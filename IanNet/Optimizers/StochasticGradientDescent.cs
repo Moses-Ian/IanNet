@@ -59,9 +59,8 @@ namespace IanNet.IanNet.Optimizers
         protected MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer;
 
-        public StochasticGradientDescent(int NumberOfNodes, float learningRate = 0.1f)
+        public StochasticGradientDescent(float learningRate = 0.1f)
         {
-            this.NumberOfNodes = NumberOfNodes;
             this.learningRate = learningRate;
         }
 
@@ -85,6 +84,11 @@ namespace IanNet.IanNet.Optimizers
         {
             this.device = device;
             NumberOfInputs = int.Parse(Options["NumberOfInputs"]);
+        }
+
+        public void SetNumberOfNodes(int numberOfNodes)
+        {
+            NumberOfNodes = numberOfNodes;
         }
 
         public void SetNodesBuffer(MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer)
