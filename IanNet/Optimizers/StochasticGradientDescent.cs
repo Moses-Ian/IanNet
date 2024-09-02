@@ -83,12 +83,12 @@ namespace IanNet.IanNet.Optimizers
         public void InitGpu(Accelerator device, Dictionary<string, string> Options = null)
         {
             this.device = device;
-            NumberOfInputs = int.Parse(Options["NumberOfInputs"]);
         }
 
-        public void SetNumberOfNodes(int numberOfNodes)
+        public void SetSize(int numberOfNodes, int numberOfInputs)
         {
             NumberOfNodes = numberOfNodes;
+            NumberOfInputs = numberOfInputs;
         }
 
         public void SetNodesBuffer(MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer)
@@ -134,12 +134,12 @@ namespace IanNet.IanNet.Optimizers
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>,
                 float,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.multiplyByLearningRate);
+                ArrayView1D<float, Stride1D.Dense>>(Kernels.scale);
             getDeltasKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.getDeltas);
+                ArrayView2D<float, Stride2D.DenseX>>(Kernels.vectorMultiply);
             elementAdd2DKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
                 ArrayView2D<float, Stride2D.DenseX>,

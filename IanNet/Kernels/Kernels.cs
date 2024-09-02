@@ -1,4 +1,5 @@
 ﻿using ILGPU.Algorithms.Random;
+using ILGPU.Algorithms;
 using ILGPU.Runtime;
 using ILGPU;
 using System;
@@ -85,14 +86,59 @@ namespace IanNet.IanNet.Kernel
             result[index] = A[index] * B[index];
         }
 
-        public static void multiplyByLearningRate(Index1D index, ArrayView1D<float, Stride1D.Dense> vector, float learningRate, ArrayView1D<float, Stride1D.Dense> result)
+        public static void elementDivide(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> result)
         {
-            result[index] = learningRate * vector[index];
+            result[index] = A[index] / B[index];
         }
 
-        public static void getDeltas(Index2D index, ArrayView1D<float, Stride1D.Dense> gradient, ArrayView1D<float, Stride1D.Dense> values, ArrayView2D<float, Stride2D.DenseX> deltas)
+        public static void elementDivide2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
         {
-            deltas[index.X, index.Y] = gradient[index.X] * values[index.Y];
+            result[index] = A[index] / B[index];
+        }
+
+        public static void elementSquared(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = A[index] * A[index];
+        }
+
+        public static void elementSquared2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index] = A[index] * A[index];
+        }
+
+        public static void elementSquareRoot(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = XMath.Sqrt(A[index]);
+        }
+
+        public static void elementSquareRoot2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index] = XMath.Sqrt(A[index]);
+        }
+
+        public static void scale(Index1D index, ArrayView1D<float, Stride1D.Dense> vector, float scale, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = scale * vector[index];
+        }
+
+        public static void scale2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> matrix, float scale, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index] = scale * matrix[index];
+        }
+
+        public static void addScalar(Index1D index, ArrayView1D<float, Stride1D.Dense> vector, float scalar, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = vector[index] + scalar;
+        }
+
+        public static void addScalar2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> matrix, float scalar, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index] = matrix[index] + scalar;
+        }
+
+        public static void vectorMultiply(Index2D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index.X, index.Y] = A[index.X] * B[index.Y];
         }
 
         public static void elementAdd2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
@@ -103,6 +149,21 @@ namespace IanNet.IanNet.Kernel
         public static void elementAdd1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> result)
         {
             result[index] = A[index] + B[index];
+        }
+
+        public static void elementSubtract2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index.X, index.Y] = A[index.X, index.Y] - B[index.X, index.Y];
+        }
+
+        public static void elementSubtract2DTranspose(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index.X, index.Y] = A[index.X, index.Y] - B[index.Y, index.X];
+        }
+
+        public static void elementSubtract1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = A[index] - B[index];
         }
 
         public static void clip(Index1D index, ArrayView1D<float, Stride1D.Dense> A, float clip, ArrayView1D<float, Stride1D.Dense> result)

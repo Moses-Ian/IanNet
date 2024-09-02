@@ -16,20 +16,25 @@
   <Namespace>IanNet.IanNet</Namespace>
   <Namespace>IanNet.IanNet.Batch</Namespace>
   <Namespace>IanNet.IanNet.Layers</Namespace>
+  <Namespace>IanNet.IanNet.Optimizers</Namespace>
   <Namespace>System.Drawing</Namespace>
 </Query>
 
 void Main()
 {
-	int epochs=2000;
+	int epochs=40;
 	int take=2;
 	bool oldWay = false;
+	var netOptions = new Dictionary<string, string>()
+	{
+		{ "ForceCPU", "true" }
+	};
 
 	ShowTheFirstLetter();
 	var Net = MakeTheNetwork();
 	Console.WriteLine(Net.ToString());
 
-	Net.Compile();
+	Net.Compile(netOptions);
 	Console.WriteLine("Compiled successfully");
 	
 	string firstLine = File.ReadLines(trainingFilepath).First();
@@ -48,16 +53,22 @@ void Main()
 		batch.Add(new Tuple<object, object>(new Image() { pixels = pix }, (Label) label));
 	}
 	
+	var options = new TrainingOptions()
+	{
+		Epochs = epochs,
+		TrackAccuracy = true,
+		TrackLoss = true,
+		HistoryStepSize = epochs / 100
+	};
+	
+	var earlyStopping = new EarlyStopping();
+	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfLossIsNaN);
+	Net.SetEarlyStopping(earlyStopping);
+	
 	var stopwatch = new Stopwatch();
 	stopwatch.Start();
 
-	// big learning rate
-	Net.Train(batch, epochs: epochs, track: new List<string> { "Accuracy", "Loss" });
-	
-	// small learning rate
-	//Net.Layers.ForEach(layer => layer.learningRate = 1f);
-	//Net.Train(batch, epochs: epochs, track: new List<string> { "Accuracy", "Loss" });
-	
+	Net.Train(batch, options);
 	
 	Label result = (Label) Net.Forward(image);
 	Console.WriteLine(result.ToString());
@@ -97,33 +108,33 @@ void Main()
 	CvInvoke.DestroyAllWindows();
 }
 
+
 public string trainingFilepath = "F:/projects_csharp/handwriting-reader/datasets/mnist_train_small.csv";
 public int scale = 8;
 
 public Net MakeTheNetwork()
 {
 	var net = new Net();
-	var learningRate = 0.11f;
+	var learningRate = 0.1f;
 	
 	var inputLayer = new InputLayer<Image>(784);
 	inputLayer.SetPreprocess(Preprocess);
-	inputLayer.learningRate = learningRate;
 	
 	var hiddenLayer1 = new Layer(100);
-	hiddenLayer1.learningRate = learningRate;
+	hiddenLayer1.SetOptimizer(new Adam(learningRate));
 	
-	var hiddenLayer2 = new Layer(50);
-	hiddenLayer2.learningRate = learningRate;
+	//var hiddenLayer2 = new Layer(50);
+	//hiddenLayer2.SetOptimizer(new Adam(learningRate));
 	
 	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
 	var outputLayer = new OutputLayer<Label>(numberOfLabels);
 	outputLayer.SetPostprocess(Postprocess);
 	outputLayer.SetBackPostprocess(BackPostprocess);
-	outputLayer.learningRate = learningRate;
+	outputLayer.SetOptimizer(new Adam(learningRate));
 	
 	net.AddLayer(inputLayer);
 	net.AddLayer(hiddenLayer1);
-	net.AddLayer(hiddenLayer2);
+	//net.AddLayer(hiddenLayer2);
 	net.AddLayer(outputLayer);
 	
 	

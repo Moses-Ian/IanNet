@@ -39,7 +39,7 @@ namespace IanNet.IanNet.Layers
 
             // in case the dev wants to use the default
             this.optimizer = optimizer ?? new StochasticGradientDescent(0.1f);
-            this.optimizer.SetNumberOfNodes(NumberOfNodes);
+            this.optimizer.SetSize(NumberOfInputs, NumberOfNodes);
         }
 
         public virtual void Compile(Accelerator device, MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -134,7 +134,7 @@ namespace IanNet.IanNet.Layers
         public void SetOptimizer(IOptimizer optimizer)
         {
             this.optimizer = optimizer;
-            optimizer.SetNumberOfNodes(NumberOfNodes);
+            optimizer.SetSize(NumberOfInputs, NumberOfNodes);
         }
 
         #region Get Data

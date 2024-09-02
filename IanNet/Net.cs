@@ -79,6 +79,7 @@ namespace IanNet.IanNet
 
         public void InitGpu(bool forceCPU = false)
         {
+            Console.WriteLine("forceCPU: " + forceCPU);
             // set up the gpu
             context = Context.Create(builder => builder.Cuda().CPU().EnableAlgorithms());
             device = context.GetPreferredDevice(forceCPU).CreateAccelerator(context);
@@ -125,6 +126,7 @@ namespace IanNet.IanNet
             
             for (int epoch = 0; epoch < options.Epochs; epoch++)
             {
+                Console.WriteLine("Epoch " + epoch);
                 /*  // Commented because this SHOULD reduce transfer time, but I clearly am misunderstanding something
                 IEnumerable<float[]> items = batch.Select(item => inputLayer.Preprocess(item.Item1));
                 IEnumerable<float[]> targets = batch.Select(item => outputLayer.BackPostprocess(item.Item2));
