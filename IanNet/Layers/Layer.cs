@@ -61,6 +61,7 @@ namespace IanNet.IanNet.Layers
             optimizer.CompileKernels();
 
             InitNetwork();
+            optimizer.InitNetwork();
         }
 
         public virtual void InitGpu(Accelerator device, Dictionary<string, string> Options = null)
@@ -121,9 +122,27 @@ namespace IanNet.IanNet.Layers
         {
             // to get the error...
             // transpose the weights...
-            transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
+            //GetWeights();
+            
             // ...and multiply the weights by the previous error
-            multiplyKernel(NumberOfInputs, weightsTransposedBuffer, downstreamErrorsBuffer, errorsBuffer);
+            //Console.WriteLine("about to multiply");
+            //var errors = GetErrors();
+            //Console.WriteLine($"errors: {errors.Length}");
+            //Console.WriteLine($"downstreamErrors: {downstreamErrorsBuffer.Length}");
+            //Console.WriteLine($"weights: {weights.GetLength(0)} {weights.GetLength(1)}");
+            //Console.WriteLine($"weightsTransposed: {weightsTransposed.GetLength(0)} {weightsTransposed.GetLength(1)}");
+            //transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
+            //multiplyKernel(NumberOfInputs, weightsTransposedBuffer, downstreamErrorsBuffer, errorsBuffer);
+        }
+
+        public virtual void PassBackError()
+        {
+            // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
+            if (upstreamErrorsBuffer == null)
+                return;
+
+            transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
+            multiplyKernel(NumberOfInputs, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
         }
 
         public virtual void BackPropogate()

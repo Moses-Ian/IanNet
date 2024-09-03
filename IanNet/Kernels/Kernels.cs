@@ -12,6 +12,18 @@ namespace IanNet.IanNet.Kernel
 {
     public abstract class Kernels
     {
+        // There's supposed to be a better way to do this, but ChatGPT doesn't know what it is and I don't feel like figuring it out
+        public static void fillWithZeros(Index1D index, ArrayView1D<float, Stride1D.Dense> vector)
+        {
+            vector[index] = 0f;
+        }
+
+        // There's supposed to be a better way to do this, but ChatGPT doesn't know what it is and I don't feel like figuring it out
+        public static void fillWithZeros2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> matrix)
+        {
+            matrix[index] = 0f;
+        }
+
         public static void fillRandom1D(Index1D index, ArrayView1D<float, Stride1D.Dense> weights, long seed)
         {
             // Create a random number generator for each thread

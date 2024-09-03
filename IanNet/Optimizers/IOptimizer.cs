@@ -20,5 +20,6 @@ namespace IanNet.IanNet.Optimizers
         public void InitBuffers();
         public void CompileKernels();
         public void InitGpu(Accelerator device, Dictionary<string, string> Options = null);
+        public void InitNetwork();
     }
 }

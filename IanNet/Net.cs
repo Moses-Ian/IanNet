@@ -65,9 +65,14 @@ namespace IanNet.IanNet
             }
 
             // hook up the errors in reverse order
-            for (int i = Layers.Count - 2; i >= 1; i--)
+            //for (int i = Layers.Count - 2; i >= 1; i--)
+            //{
+            //    Layers[i].SetDownstreamErrorsBuffer(Layers[i+1].GetErrorsBuffer());
+            //}
+
+            for (int i = 2; i < Layers.Count; i++)
             {
-                Layers[i].SetDownstreamErrorsBuffer(Layers[i+1].GetErrorsBuffer());
+                Layers[i].SetUpstreamErrorsBuffer(Layers[i-1].GetErrorsBuffer());
             }
 
             // compile kernels
@@ -98,17 +103,22 @@ namespace IanNet.IanNet
 
         public void Train(object inputs, object target)
         {
+            //Console.WriteLine("weights:");
+            //Console.WriteLine(Layers[2].GetWeights());
             Forward(inputs, returnResult: false);
 
             // run through the layers backwards
             var outputLayer = Layers.AsEnumerable().Reverse().First();
             outputLayer.LoadTarget(target);
+            outputLayer.CalculateError();
 
             Layers.AsEnumerable().Skip(1).Reverse().ToList().ForEach(layer =>
             {
-                layer.CalculateError();
+                //layer.CalculateError();
+                layer.PassBackError();
                 layer.BackPropogate();
             });
+
         }
 
         public void Train(LabelledBatch<Tuple<object, object>> batch, TrainingOptions options = null)
@@ -126,7 +136,7 @@ namespace IanNet.IanNet
             
             for (int epoch = 0; epoch < options.Epochs; epoch++)
             {
-                Console.WriteLine("Epoch " + epoch);
+                //Console.WriteLine("Epoch " + epoch);
                 /*  // Commented because this SHOULD reduce transfer time, but I clearly am misunderstanding something
                 IEnumerable<float[]> items = batch.Select(item => inputLayer.Preprocess(item.Item1));
                 IEnumerable<float[]> targets = batch.Select(item => outputLayer.BackPostprocess(item.Item2));

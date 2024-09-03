@@ -151,5 +151,7 @@ namespace IanNet.IanNet.Optimizers
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(Kernels.elementAdd1D);
         }
+
+        public void InitNetwork() { }
     }
 }

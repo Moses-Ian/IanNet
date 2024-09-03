@@ -18,7 +18,9 @@ namespace IanNet.IanNet.Layers
         protected MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense>  errorsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> targetsBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer;
+        //protected MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer;
+        protected MemoryBuffer1D<float, Stride1D.Dense> upstreamErrorsBuffer;
+
 
         // buffer for holding transient data
         protected MemoryBuffer1D<float, Stride1D.Dense> transientBuffer;
@@ -41,15 +43,11 @@ namespace IanNet.IanNet.Layers
             transientBuffer = device.Allocate1D<float>(nodes.Length);
 
             weightsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(weights));
-            weightsTransposedBuffer = device.Allocate2DDenseX<float>(GetIndex2D(weights));
+            weightsTransposedBuffer = device.Allocate2DDenseX<float>(new Index2D(weights.GetLength(1), weights.GetLength(0)));
             biasesBuffer = device.Allocate1D<float>(biases.Length);
             nodesBuffer = device.Allocate1D<float>(nodes.Length);
             errorsBuffer = transientBuffer;
             targetsBuffer = transientBuffer;
-
-            // init the optimizer buffers
-            optimizer.SetNodesBuffer(nodesBuffer);
-            optimizer.InitBuffers();
         }
 
         public Index2D GetIndex2D(float[,] matrix)
@@ -88,9 +86,14 @@ namespace IanNet.IanNet.Layers
             this.inputsBuffer = inputsBuffer;
         }
 
-        public virtual void SetDownstreamErrorsBuffer(MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer)
+        //public virtual void SetDownstreamErrorsBuffer(MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer)
+        //{
+        //    this.downstreamErrorsBuffer = downstreamErrorsBuffer;
+        //}
+
+        public virtual void SetUpstreamErrorsBuffer(MemoryBuffer1D<float, Stride1D.Dense> upstreamErrorsBuffer)
         {
-            this.downstreamErrorsBuffer = downstreamErrorsBuffer;
+            this.upstreamErrorsBuffer = upstreamErrorsBuffer;
         }
 
         #endregion
