@@ -181,5 +181,65 @@ namespace IanNet.IanNet.Kernel
         {
             result[index] = A[index] > clip ? A[index] : clip;
         }
+
+        public static void adam(
+            Index1D index, 
+            float learningRate,
+            float beta1,
+            float beta2,
+            float epsilon,
+            ArrayView1D<float, Stride1D.Dense> gradients, 
+            ArrayView1D<float, Stride1D.Dense> m,
+            ArrayView1D<float, Stride1D.Dense> v,
+            ArrayView1D<float, Stride1D.Dense> weights)
+        {
+            // calculate momentum
+            m[index] = beta1 * m[index] + (1 - beta1) * gradients[index];
+            // correct the momentum
+            float mhat = m[index] / (1 - beta1);
+
+            // calculate second momentum
+            v[index] = beta2 * v[index] + (1 - beta2) * gradients[index] * gradients[index];
+            // correct the second momentum
+            float vhat = v[index] / (1 - beta2);
+
+            // calculate deltas
+            mhat = mhat * learningRate;
+            vhat = XMath.Sqrt(vhat) + epsilon;
+            gradients[index] = mhat / vhat;
+
+            // and update the weights
+            weights[index] += gradients[index];
+        }
+
+        public static void adam2D(
+            Index2D index, 
+            float learningRate,
+            float beta1,
+            float beta2,
+            float epsilon,
+            ArrayView2D<float, Stride2D.DenseX> gradients, 
+            ArrayView2D<float, Stride2D.DenseX> m,
+            ArrayView2D<float, Stride2D.DenseX> v,
+            ArrayView2D<float, Stride2D.DenseX> weights)
+        {
+            // calculate momentum
+            m[index] = beta1 * m[index] + (1 - beta1) * gradients[index];
+            // correct the momentum
+            float mhat = m[index] / (1 - beta1);
+
+            // calculate second momentum
+            v[index] = beta2 * v[index] + (1 - beta2) * gradients[index] * gradients[index];
+            // correct the second momentum
+            float vhat = v[index] / (1 - beta2);
+
+            // calculate deltas
+            mhat = mhat * learningRate;
+            vhat = XMath.Sqrt(vhat) + epsilon;
+            gradients[index] = mhat / vhat;
+
+            // and update the weights
+            weights[index] += gradients[index];
+        }
     }
 }

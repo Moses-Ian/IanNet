@@ -22,12 +22,13 @@
 
 void Main()
 {
-	int epochs=40;
-	int take=2;
+	int epochs=10;
+	int take=int.MaxValue;
 	bool oldWay = false;
+	int historyStepSize = 1;
 	var netOptions = new Dictionary<string, string>()
 	{
-		{ "ForceCPU", "true" }
+		{ "ForceCPU", "false" }
 	};
 
 	ShowTheFirstLetter();
@@ -58,11 +59,12 @@ void Main()
 		Epochs = epochs,
 		TrackAccuracy = true,
 		TrackLoss = true,
-		HistoryStepSize = epochs / 100
+		HistoryStepSize = historyStepSize
 	};
 	
 	var earlyStopping = new EarlyStopping();
 	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfLossIsNaN);
+	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfAccuracyIsHigh(0.99f));
 	Net.SetEarlyStopping(earlyStopping);
 	
 	var stopwatch = new Stopwatch();
@@ -122,6 +124,7 @@ public Net MakeTheNetwork()
 	
 	var hiddenLayer1 = new Layer(100);
 	hiddenLayer1.SetOptimizer(new Adam(learningRate));
+	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	//var hiddenLayer2 = new Layer(50);
 	//hiddenLayer2.SetOptimizer(new Adam(learningRate));
@@ -131,6 +134,7 @@ public Net MakeTheNetwork()
 	outputLayer.SetPostprocess(Postprocess);
 	outputLayer.SetBackPostprocess(BackPostprocess);
 	outputLayer.SetOptimizer(new Adam(learningRate));
+	//outputLayer.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	net.AddLayer(inputLayer);
 	net.AddLayer(hiddenLayer1);

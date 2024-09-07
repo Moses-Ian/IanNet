@@ -19,10 +19,6 @@ namespace IanNet.IanNet.Optimizers
         public float learningRate;
         public float beta1;
         public float beta2;
-        public float beta1T;    // 1 - beta1
-        public float beta2T;    // 1 - beta2
-        public float beta1TT;    // 1 / 1 - beta1
-        public float beta2TT;    // 1 / 1 - beta2
         public float epsilon = 1e-8f;
 
         // core data
@@ -38,82 +34,36 @@ namespace IanNet.IanNet.Optimizers
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>> elementMultiplyKernel;
         public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>> elementDivideKernel;
-        public Action<
-            Index2D,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>> elementDivide2DKernel;
-        public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>> elementSquaredKernel;
-        public Action<
-            Index2D,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>> elementSquared2DKernel;
-        public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>> elementSquareRootKernel;
-        public Action<
-            Index2D,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>> elementSquareRoot2DKernel;
-        public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            float,
-            ArrayView1D<float, Stride1D.Dense>> scaleKernel;
-        public Action<
-            Index2D,
-            ArrayView2D<float, Stride2D.DenseX>,
-            float,
-            ArrayView2D<float, Stride2D.DenseX>> scale2DKernel;
-        public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            float,
-            ArrayView1D<float, Stride1D.Dense>> addScalarKernel;
-        public Action<
-            Index2D,
-            ArrayView2D<float, Stride2D.DenseX>,
-            float,
-            ArrayView2D<float, Stride2D.DenseX>> addScalar2DKernel;
-        public Action<
             Index2D,
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView2D<float, Stride2D.DenseX>> vectorMultiplyKernel;
         public Action<
-            Index2D,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>> elementAdd2DKernel;
-        public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>> elementAdd1DKernel;
-        public Action<
-            Index2D,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>> elementSubtract2DKernel;
-        public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>> elementSubtract1DKernel;
-        public Action<
             Index1D,
             ArrayView1D<float, Stride1D.Dense>> fillWithZerosKernel;
-         public Action<
+        public Action<
+           Index2D,
+           ArrayView2D<float, Stride2D.DenseX>> fillWithZeros2DKernel;
+        public Action<
+            Index1D,
+            float,
+            float,
+            float,
+            float,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>> adamKernel;
+        public Action<
             Index2D,
-            ArrayView2D<float, Stride2D.DenseX>> fillWithZeros2DKernel;
+            float,
+            float,
+            float,
+            float,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>> adam2DKernel;
 
         // buffers
         protected MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer;
@@ -124,117 +74,39 @@ namespace IanNet.IanNet.Optimizers
         protected MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> mBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> vBuffer;
-        protected MemoryBuffer2D<float, Stride2D.DenseX> mhatBuffer;
-        protected MemoryBuffer2D<float, Stride2D.DenseX> vhatBuffer;
-
+        
         protected MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> mBiasBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> vBiasBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> mhatBiasBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> vhatBiasBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> gradientBiasBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> tempBiasBuffer;
 
         public Adam(float learningRate = 0.1f, float beta1 = 0.9f, float beta2 = 0.999f)
         {
             this.learningRate = learningRate;
             this.beta1 = beta1;
             this.beta2 = beta2;
-            beta1T = 1 - beta1;
-            beta2T = 1 - beta2;
-            beta1TT = 1f / (1 - beta1);
-            beta2TT = 1f / (1 - beta2);
         }
 
         public void BackPropogate()
         {
-            /*
-             * gradients
-             * gradients = gradients * errors
-             * 
-             * m1 = m1 * beta1
-             * mhat = gradients * (1 - beta1)
-             * m1 = m1 + mhat
-             *   -> m1 = m1 * beta1 + gradients * (1 - beta1)
-             * mhat = m1 / (1 - beta1)
-             * 
-             * m2 = m2 * beta2
-             * temp2 = gradients^2
-             * temp2 = temp2 * (1 - beta2)
-             * m2 = m2 + temp2
-             *   -> m2 = m2 * beta2 + gradients^2 * (1 - beta2)
-             * temp2 = m2 / (1 - beta2)
-             * 
-             * temp1 = temp1 * learningRate
-             * temp2 = sqrt(temp2)
-             * temp2 = temp2 + epsilon
-             * gradients = temp1 / temp2
-             *   -> gradients = temp1 * learningRate / ( sqrt(temp2) + epsilon )
-             * 
-             */
-
-
             #region Weights
 
+            // calculate gradient
             gradientKernel(NumberOfNodes, nodesBuffer, tempBuffer);    // this gives us the unactivated output
             elementMultiplyKernel(NumberOfNodes, errorsBuffer, tempBuffer, tempBuffer); // this gives us scaled errors
             vectorMultiplyKernel(size, tempBuffer, inputsBuffer, gradientsBuffer);
-            
-            // calculate momentum
-            scale2DKernel(size, mBuffer, beta1, mBuffer);
-            scale2DKernel(size, gradientsBuffer, beta1T, mhatBuffer);   // mhatBuffer is used here as a temp variable
-            elementAdd2DKernel(size, mBuffer, mhatBuffer, mBuffer);
-            // correct the momentum
-            scale2DKernel(size, mBuffer, beta1TT, mhatBuffer);
-            
-            // calculate second momentum
-            scale2DKernel(size, vBuffer, beta2, vBuffer);
-            elementSquared2DKernel(size, gradientsBuffer, vhatBuffer);  // vhatBuffer is used here as a temp variable
-            scale2DKernel(size, vhatBuffer, beta2T, vhatBuffer);
-            elementAdd2DKernel(size, vBuffer, vhatBuffer, vBuffer);
-            // correct the second momentum
-            scale2DKernel(size, vBuffer, beta2TT, vhatBuffer);
-            
-            // calculate deltas
-            scale2DKernel(size, mhatBuffer, learningRate, mhatBuffer);
-            elementSquareRoot2DKernel(size, vhatBuffer, vhatBuffer);
-            addScalar2DKernel(size, vhatBuffer, epsilon, vhatBuffer);
-            elementDivide2DKernel(size, mhatBuffer, vhatBuffer, gradientsBuffer);
-            
-            // and update the weights
-            elementAdd2DKernel(new Index2D(NumberOfNodes, NumberOfInputs), weightsBuffer, gradientsBuffer, weightsBuffer);
-            
+
+            adam2DKernel(size, learningRate, beta1, beta2, epsilon, gradientsBuffer, mBuffer, vBuffer, weightsBuffer);
+
             #endregion
 
             #region Biases
 
             // calculate gradient
             gradientKernel(NumberOfNodes, nodesBuffer, gradientBiasBuffer);    // this gives us the unactivated output
-            elementMultiplyKernel(NumberOfNodes, errorsBuffer, gradientBiasBuffer, tempBiasBuffer); // this gives us scaled errors
-            
-            // calculate momentum
-            scaleKernel(NumberOfNodes, mBiasBuffer, beta1, mBiasBuffer);
-            scaleKernel(NumberOfNodes, gradientBiasBuffer, beta1T, mhatBiasBuffer);
-            elementAdd1DKernel(NumberOfNodes, mBiasBuffer, mhatBiasBuffer, mBiasBuffer);
-            // correct the momentum
-            scaleKernel(NumberOfNodes, mBiasBuffer, beta1TT, mhatBiasBuffer);
-            
-            // calculate second momentum
-            scaleKernel(NumberOfNodes, vBiasBuffer, beta2, vBiasBuffer);
-            elementSquaredKernel(NumberOfNodes, gradientBiasBuffer, vhatBiasBuffer);
-            scaleKernel(NumberOfNodes, vhatBiasBuffer, beta2T, vhatBiasBuffer);
-            elementAdd1DKernel(NumberOfNodes, vBiasBuffer, vhatBiasBuffer, vBiasBuffer);
-            // correct the second momentum
-            scaleKernel(NumberOfNodes, vBiasBuffer, beta2TT, vhatBiasBuffer);
-            
-            // calculate deltas
-            scaleKernel(NumberOfNodes, mhatBiasBuffer, learningRate, mhatBiasBuffer);
-            elementSquareRootKernel(NumberOfNodes, vhatBiasBuffer, vhatBiasBuffer);
-            addScalarKernel(NumberOfNodes, vhatBiasBuffer, epsilon, vhatBiasBuffer);
-            elementDivideKernel(NumberOfNodes, mhatBiasBuffer, vhatBiasBuffer, gradientBiasBuffer);
-            
-            // and update the weights
-            elementAdd1DKernel(NumberOfNodes, biasesBuffer, gradientBiasBuffer, biasesBuffer);
+            elementMultiplyKernel(NumberOfNodes, errorsBuffer, gradientBiasBuffer, gradientBiasBuffer); // this gives us scaled errors
+
+            adamKernel(NumberOfNodes, learningRate, beta1, beta2, epsilon, gradientBiasBuffer, mBiasBuffer, vBiasBuffer, biasesBuffer);
             
             #endregion
         }
@@ -279,27 +151,19 @@ namespace IanNet.IanNet.Optimizers
             this.biasesBuffer = biasesBuffer;
         }
 
-        //private static int times = 0;
-
         public void InitBuffers()
         {
-            //Console.WriteLine($"InitBuffers has been called {++times} times");
             if (size == default)
                 throw new Exception("Size has not been defined");
 
             gradientsBuffer = device.Allocate2DDenseX<float>(size);
             mBuffer = device.Allocate2DDenseX<float>(size);
             vBuffer = device.Allocate2DDenseX<float>(size);
-            mhatBuffer = device.Allocate2DDenseX<float>(size);
-            vhatBuffer = device.Allocate2DDenseX<float>(size);
             tempBuffer = device.Allocate1D<float>(NumberOfNodes);
 
             gradientBiasBuffer = device.Allocate1D<float>(NumberOfNodes);
             mBiasBuffer = device.Allocate1D<float>(NumberOfNodes);
             vBiasBuffer = device.Allocate1D<float>(NumberOfNodes);
-            mhatBiasBuffer = device.Allocate1D<float>(NumberOfNodes);
-            vhatBiasBuffer = device.Allocate1D<float>(NumberOfNodes);
-            tempBiasBuffer = device.Allocate1D<float>(NumberOfNodes);
         }
 
         public void CompileKernels()
@@ -310,84 +174,38 @@ namespace IanNet.IanNet.Optimizers
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(Kernels.elementMultiply);
-            elementDivideKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.elementDivide);
-            elementDivide2DKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.elementDivide2D);
-            elementSquaredKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.elementSquared);
-            elementSquared2DKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.elementSquared2D);
-            elementSquareRootKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.elementSquareRoot);
-            elementSquareRoot2DKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.elementSquareRoot2D);
-            scaleKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                float,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.scale);
-            scale2DKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                ArrayView2D<float, Stride2D.DenseX>,
-                float,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.scale2D);
-            addScalarKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                float,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.addScalar);
-            addScalar2DKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                ArrayView2D<float, Stride2D.DenseX>,
-                float,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.addScalar2D);
             vectorMultiplyKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView2D<float, Stride2D.DenseX>>(Kernels.vectorMultiply);
-            elementAdd2DKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.elementAdd2D);
-            elementAdd1DKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.elementAdd1D);
-            elementSubtract2DKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.elementSubtract2D);
-            elementSubtract1DKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.elementSubtract1D);
             fillWithZerosKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>>(Kernels.fillWithZeros);
             fillWithZeros2DKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
                 ArrayView2D<float, Stride2D.DenseX>>(Kernels.fillWithZeros2D);
-        }
+            adamKernel = device.LoadAutoGroupedStreamKernel<
+                Index1D,
+                float,
+                float,
+                float,
+                float,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView1D<float, Stride1D.Dense>>(Kernels.adam);
+            adam2DKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                float,
+                float,
+                float,
+                float,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>>(Kernels.adam2D);
+            }
 
         public void InitNetwork()
         {
@@ -397,17 +215,11 @@ namespace IanNet.IanNet.Optimizers
             fillWithZerosKernel(NumberOfNodes, gradientBiasBuffer);
             fillWithZerosKernel(NumberOfNodes, mBiasBuffer);
             fillWithZerosKernel(NumberOfNodes, vBiasBuffer);
-
-            //device.Synchronize();
-            //Console.WriteLine("gradients when it's initialized: ");
-            //Console.WriteLine(gradientsBuffer.GetAsArray2D());
-
         }
 
         public Index2D GetIndex2D(float[,] matrix)
         {
             return new Index2D(matrix.GetLength(0), matrix.GetLength(1));
         }
-
     }
 }
