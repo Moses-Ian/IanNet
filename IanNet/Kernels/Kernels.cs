@@ -66,8 +66,7 @@ namespace IanNet.IanNet.Kernel
         public static void sigmoid(Index1D node, ArrayView1D<float, Stride1D.Dense> values)
         {
             // this 0.1f came from trying to prevent gradient explosion
-            // it clearly belongs somewhere else, but I'm not sure where
-            values[node] = 1f / (1f + MathF.Exp(-values[node])) * 0.1f;
+            values[node] = 1f / (1f + MathF.Exp(-values[node] * 0.1f));
         }
 
         public static void sigmoidPrime(Index1D node, ArrayView1D<float, Stride1D.Dense> values, ArrayView1D<float, Stride1D.Dense> results)

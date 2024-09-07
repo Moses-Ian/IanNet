@@ -28,7 +28,7 @@ namespace IanNet.IanNet
                 return graph;
 
             int maxEpoch = Epochs[Epochs.Count - 1].Number;
-            float maxAccuracy = 1.0f; // Assuming accuracy is between 0 and 1
+            float maxAccuracy = 1.2f; // Assuming accuracy is between 0 and 1, plus some buffer on the top
 
             // drawing the vertical lines
             int step = Epochs.Count / 10 >= 1 ? Epochs.Count / 10 : 1;

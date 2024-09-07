@@ -21,6 +21,7 @@ namespace IanNet.IanNet.Optimizers
         // core data
         public int NumberOfNodes;
         public int NumberOfInputs;
+        private Index2D size;
 
         // kernels
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>, ArrayView1D<float, Stride1D.Dense>> gradientKernel;
@@ -72,10 +73,10 @@ namespace IanNet.IanNet.Optimizers
             multiplyByLearningRateKernel(NumberOfNodes, gradientsBuffer, learningRate, gradientsBuffer);
 
             // calculate deltas
-            getDeltasKernel((NumberOfNodes, NumberOfInputs), gradientsBuffer, inputsBuffer, deltasBuffer);
+            getDeltasKernel(size, gradientsBuffer, inputsBuffer, deltasBuffer);
 
             // and update the weights
-            elementAdd2DKernel(new Index2D(NumberOfNodes, NumberOfInputs), weightsBuffer, deltasBuffer, weightsBuffer);
+            elementAdd2DKernel(size, weightsBuffer, deltasBuffer, weightsBuffer);
             // the biases are updated simply with the gradients
             elementAdd1DKernel(NumberOfNodes, biasesBuffer, gradientsBuffer, biasesBuffer);
         }
@@ -85,10 +86,11 @@ namespace IanNet.IanNet.Optimizers
             this.device = device;
         }
 
-        public void SetSize(int numberOfNodes, int numberOfInputs)
+        public void SetSize(int numberOfInputs, int numberOfNodes)
         {
             NumberOfNodes = numberOfNodes;
             NumberOfInputs = numberOfInputs;
+            size = new Index2D(NumberOfNodes, NumberOfInputs);
         }
 
         public void SetNodesBuffer(MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer)
@@ -119,7 +121,7 @@ namespace IanNet.IanNet.Optimizers
         public void InitBuffers()
         {
             gradientsBuffer = device.Allocate1D<float>(NumberOfNodes);
-            deltasBuffer = device.Allocate2DDenseX<float>((NumberOfNodes, NumberOfInputs));
+            deltasBuffer = device.Allocate2DDenseX<float>(size);
         }
 
         public void CompileKernels()

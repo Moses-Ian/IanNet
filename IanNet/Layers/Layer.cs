@@ -39,7 +39,6 @@ namespace IanNet.IanNet.Layers
 
             // in case the dev wants to use the default
             this.optimizer = optimizer ?? new StochasticGradientDescent(0.1f);
-            this.optimizer.SetSize(NumberOfInputs, NumberOfNodes);
         }
 
         public virtual void Compile(Accelerator device, MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -50,6 +49,7 @@ namespace IanNet.IanNet.Layers
             InitCpu();
 
             InitBuffers(inputsBuffer);
+            optimizer.SetSize(NumberOfInputs, NumberOfNodes);
             optimizer.InitBuffers();
             optimizer.SetNodesBuffer(nodesBuffer);
             optimizer.SetErrorsBuffer(errorsBuffer);
@@ -88,14 +88,6 @@ namespace IanNet.IanNet.Layers
             fillRandom1DKernel(biases.Length, biasesBuffer, random.NextInt64());
         }
 
-        /// <summary>
-        /// This should only be called by layers that extend InputLayer
-        /// </summary>
-        public virtual void Load(object input)
-        {
-            throw new NotImplementedException();
-        }
-
         public virtual void Forward()
         {
             // run the kernels
@@ -108,31 +100,6 @@ namespace IanNet.IanNet.Layers
             // run the kernels
             forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
             activationKernel(nodes.Length, nodesBuffer);
-        }
-
-        /// <summary>
-        /// This should only be called by layers that extend OutputLayer
-        /// </summary>
-        public virtual void LoadTarget(object target)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual void CalculateError()
-        {
-            // to get the error...
-            // transpose the weights...
-            //GetWeights();
-            
-            // ...and multiply the weights by the previous error
-            //Console.WriteLine("about to multiply");
-            //var errors = GetErrors();
-            //Console.WriteLine($"errors: {errors.Length}");
-            //Console.WriteLine($"downstreamErrors: {downstreamErrorsBuffer.Length}");
-            //Console.WriteLine($"weights: {weights.GetLength(0)} {weights.GetLength(1)}");
-            //Console.WriteLine($"weightsTransposed: {weightsTransposed.GetLength(0)} {weightsTransposed.GetLength(1)}");
-            //transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
-            //multiplyKernel(NumberOfInputs, weightsTransposedBuffer, downstreamErrorsBuffer, errorsBuffer);
         }
 
         public virtual void PassBackError()
@@ -229,6 +196,30 @@ namespace IanNet.IanNet.Layers
         public virtual float[] BackPostprocess(object obj)
         {
             throw new NotImplementedException(); 
+        }
+
+        /// <summary>
+        /// This should only be called by layers that extent OutputLayer
+        /// </summary>
+        public virtual void CalculateError()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// This should only be called by layers that extend OutputLayer
+        /// </summary>
+        public virtual void LoadTarget(object target)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// This should only be called by layers that extend InputLayer
+        /// </summary>
+        public virtual void Load(object input)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

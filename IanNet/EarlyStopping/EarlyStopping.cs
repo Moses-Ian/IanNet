@@ -13,7 +13,7 @@ namespace IanNet.IanNet
         /// Returns true if training should stop.
         /// </summary>
         public delegate bool ShouldStopDelegate(Epoch epoch);
-
+        
         // Define an event based on the delegate
         public List<ShouldStopDelegate> ShouldStop;
 

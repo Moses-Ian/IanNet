@@ -103,8 +103,6 @@ namespace IanNet.IanNet
 
         public void Train(object inputs, object target)
         {
-            //Console.WriteLine("weights:");
-            //Console.WriteLine(Layers[2].GetWeights());
             Forward(inputs, returnResult: false);
 
             // run through the layers backwards
@@ -114,11 +112,9 @@ namespace IanNet.IanNet
 
             Layers.AsEnumerable().Skip(1).Reverse().ToList().ForEach(layer =>
             {
-                //layer.CalculateError();
                 layer.PassBackError();
                 layer.BackPropogate();
             });
-
         }
 
         public void Train(LabelledBatch<Tuple<object, object>> batch, TrainingOptions options = null)
@@ -187,10 +183,6 @@ namespace IanNet.IanNet
                 }
                 
                 currentEpoch++;
-
-                // early stopping
-                //if (float.IsNaN(epochStats.Loss))
-                //    return;
             }
         }
 

@@ -176,157 +176,67 @@ namespace IanNet.IanNet.Optimizers
 
             #region Weights
 
-            //Console.WriteLine("weights: ");
-            //Console.WriteLine(weightsBuffer.GetAsArray2D());
-            //Console.WriteLine("gradients: ");
-            //Console.WriteLine(gradientsBuffer.GetAsArray2D());
-            //Console.WriteLine("nodes: ");
-            //Console.WriteLine(nodesBuffer.GetAsArray1D());
             gradientKernel(NumberOfNodes, nodesBuffer, tempBuffer);    // this gives us the unactivated output
-            device.Synchronize();
-            //Console.WriteLine("temp: ");
-            //Console.WriteLine(tempBuffer.GetAsArray1D());
-            //Console.WriteLine("errors: ");
-            //Console.WriteLine(errorsBuffer.GetAsArray1D());
-            // calculate gradient
             elementMultiplyKernel(NumberOfNodes, errorsBuffer, tempBuffer, tempBuffer); // this gives us scaled errors
-            device.Synchronize();
-            //Console.WriteLine("temp: ");
-            //Console.WriteLine(tempBuffer.GetAsArray1D());
-            //Console.WriteLine("inputs:");
-            //Console.WriteLine(inputsBuffer.GetAsArray1D());
             vectorMultiplyKernel(size, tempBuffer, inputsBuffer, gradientsBuffer);
-            device.Synchronize();
-            //Console.WriteLine("gradients:");
-            //Console.WriteLine(gradientsBuffer.GetAsArray2D());
-
+            
             // calculate momentum
-            //Console.WriteLine("m:");
-            //Console.WriteLine(mBuffer.GetAsArray2D());
             scale2DKernel(size, mBuffer, beta1, mBuffer);
-            device.Synchronize();
-            //Console.WriteLine("m:");
-            //Console.WriteLine(mBuffer.GetAsArray2D());
             scale2DKernel(size, gradientsBuffer, beta1T, mhatBuffer);   // mhatBuffer is used here as a temp variable
-            device.Synchronize();
-            //Console.WriteLine("mhat:");
-            //Console.WriteLine(mhatBuffer.GetAsArray2D());
             elementAdd2DKernel(size, mBuffer, mhatBuffer, mBuffer);
-            device.Synchronize();
-            //Console.WriteLine("m:");
-            //Console.WriteLine(mBuffer.GetAsArray2D());
             // correct the momentum
             scale2DKernel(size, mBuffer, beta1TT, mhatBuffer);
-            device.Synchronize();
-            //Console.WriteLine("mhat has just been calculated:");
-            //Console.WriteLine(mhatBuffer.GetAsArray2D());
-
+            
             // calculate second momentum
-            //Console.WriteLine("v:");
-            //Console.WriteLine(vBuffer.GetAsArray2D());
             scale2DKernel(size, vBuffer, beta2, vBuffer);
-            device.Synchronize();
-            //Console.WriteLine("v:");
-            //Console.WriteLine(vBuffer.GetAsArray2D());
             elementSquared2DKernel(size, gradientsBuffer, vhatBuffer);  // vhatBuffer is used here as a temp variable
-            device.Synchronize();
-            //Console.WriteLine("vhat:");
-            //Console.WriteLine(vhatBuffer.GetAsArray2D());
             scale2DKernel(size, vhatBuffer, beta2T, vhatBuffer);
-            device.Synchronize();
-            //Console.WriteLine("vhat:");
-            //Console.WriteLine(vhatBuffer.GetAsArray2D());
             elementAdd2DKernel(size, vBuffer, vhatBuffer, vBuffer);
-            device.Synchronize();
-            //Console.WriteLine("v:");
-            //Console.WriteLine(vBuffer.GetAsArray2D());
             // correct the second momentum
             scale2DKernel(size, vBuffer, beta2TT, vhatBuffer);
-            device.Synchronize();
-            //Console.WriteLine("vhat has just been calculated:");
-            //Console.WriteLine(vhatBuffer.GetAsArray2D());
-
+            
             // calculate deltas
-            //Console.WriteLine("mhat about to be used:");
-            //Console.WriteLine(mhatBuffer.GetAsArray2D());
             scale2DKernel(size, mhatBuffer, learningRate, mhatBuffer);
-            device.Synchronize();
-            //Console.WriteLine("mhat:");
-            //Console.WriteLine(mhatBuffer.GetAsArray2D());
-            //Console.WriteLine("vhat about to be used:");
-            //Console.WriteLine(vhatBuffer.GetAsArray2D());
             elementSquareRoot2DKernel(size, vhatBuffer, vhatBuffer);
-            device.Synchronize();
-            //Console.WriteLine("vhat:");
-            //Console.WriteLine(vhatBuffer.GetAsArray2D());
             addScalar2DKernel(size, vhatBuffer, epsilon, vhatBuffer);
-            device.Synchronize();
-            //Console.WriteLine("vhat:");
-            //Console.WriteLine(vhatBuffer.GetAsArray2D());
             elementDivide2DKernel(size, mhatBuffer, vhatBuffer, gradientsBuffer);
-            device.Synchronize();
-            //Console.WriteLine("gradients:");
-            //Console.WriteLine(gradientsBuffer.GetAsArray2D());
-
+            
             // and update the weights
-            //Console.WriteLine("about to subtract");
-            // this is the spot where the flipping causes the error
-            elementSubtract2DKernel(new Index2D(NumberOfNodes, NumberOfInputs), weightsBuffer, gradientsBuffer, weightsBuffer);
-            device.Synchronize();
-            //Console.WriteLine("done subtracting");
-
+            elementAdd2DKernel(new Index2D(NumberOfNodes, NumberOfInputs), weightsBuffer, gradientsBuffer, weightsBuffer);
+            
             #endregion
 
             #region Biases
 
             // calculate gradient
             gradientKernel(NumberOfNodes, nodesBuffer, gradientBiasBuffer);    // this gives us the unactivated output
-            device.Synchronize();
             elementMultiplyKernel(NumberOfNodes, errorsBuffer, gradientBiasBuffer, tempBiasBuffer); // this gives us scaled errors
-            device.Synchronize();
-
+            
             // calculate momentum
             scaleKernel(NumberOfNodes, mBiasBuffer, beta1, mBiasBuffer);
-            device.Synchronize();
             scaleKernel(NumberOfNodes, gradientBiasBuffer, beta1T, mhatBiasBuffer);
-            device.Synchronize();
             elementAdd1DKernel(NumberOfNodes, mBiasBuffer, mhatBiasBuffer, mBiasBuffer);
-            device.Synchronize();
             // correct the momentum
             scaleKernel(NumberOfNodes, mBiasBuffer, beta1TT, mhatBiasBuffer);
-            device.Synchronize();
-
+            
             // calculate second momentum
-            device.Synchronize();
             scaleKernel(NumberOfNodes, vBiasBuffer, beta2, vBiasBuffer);
-            device.Synchronize();
             elementSquaredKernel(NumberOfNodes, gradientBiasBuffer, vhatBiasBuffer);
-            device.Synchronize();
             scaleKernel(NumberOfNodes, vhatBiasBuffer, beta2T, vhatBiasBuffer);
-            device.Synchronize();
             elementAdd1DKernel(NumberOfNodes, vBiasBuffer, vhatBiasBuffer, vBiasBuffer);
-            device.Synchronize();
             // correct the second momentum
             scaleKernel(NumberOfNodes, vBiasBuffer, beta2TT, vhatBiasBuffer);
-            device.Synchronize();
-
+            
             // calculate deltas
             scaleKernel(NumberOfNodes, mhatBiasBuffer, learningRate, mhatBiasBuffer);
-            device.Synchronize();
             elementSquareRootKernel(NumberOfNodes, vhatBiasBuffer, vhatBiasBuffer);
-            device.Synchronize();
             addScalarKernel(NumberOfNodes, vhatBiasBuffer, epsilon, vhatBiasBuffer);
-            device.Synchronize();
             elementDivideKernel(NumberOfNodes, mhatBiasBuffer, vhatBiasBuffer, gradientBiasBuffer);
-            device.Synchronize();
-
+            
             // and update the weights
-            elementSubtract1DKernel(NumberOfNodes, biasesBuffer, gradientBiasBuffer, biasesBuffer);
-            device.Synchronize();
-
+            elementAdd1DKernel(NumberOfNodes, biasesBuffer, gradientBiasBuffer, biasesBuffer);
+            
             #endregion
-            //Console.WriteLine("done backpropogating");
-            Console.WriteLine(weightsBuffer.GetAsArray2D());
         }
 
         public void InitGpu(Accelerator device, Dictionary<string, string> Options = null)
@@ -488,7 +398,7 @@ namespace IanNet.IanNet.Optimizers
             fillWithZerosKernel(NumberOfNodes, mBiasBuffer);
             fillWithZerosKernel(NumberOfNodes, vBiasBuffer);
 
-            device.Synchronize();
+            //device.Synchronize();
             //Console.WriteLine("gradients when it's initialized: ");
             //Console.WriteLine(gradientsBuffer.GetAsArray2D());
 
