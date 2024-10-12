@@ -22,8 +22,10 @@
 
 void Main()
 {
-	int epochs=10;
-	int take=int.MaxValue;
+	//int epochs=10;
+	//int take=int.MaxValue;
+	int epochs = 1;
+	int take = 1;
 	bool oldWay = false;
 	int historyStepSize = 1;
 	var netOptions = new Dictionary<string, string>()
@@ -37,6 +39,8 @@ void Main()
 
 	Net.Compile(netOptions);
 	Console.WriteLine("Compiled successfully");
+	Console.WriteLine(Net.ToMermaid());
+	Net.DisplayMermaid();
 	
 	string firstLine = File.ReadLines(trainingFilepath).First();
 	var values = firstLine.Split(',');

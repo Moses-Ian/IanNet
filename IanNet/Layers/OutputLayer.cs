@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IanNet.IanNet.DataProcessing;
 
 namespace IanNet.IanNet.Layers
 {
@@ -28,6 +29,12 @@ namespace IanNet.IanNet.Layers
         public void SetBackPostprocess(BackPostprocessDelegate backPostprocess)
         {
             _BackPostprocess = backPostprocess;
+        }
+
+        public void SetProcessing(IProcessing<T> processing)
+        {
+            Postprocess = processing.Process;
+            _BackPostprocess = processing.BackProcess;
         }
 
         public override void Forward()
