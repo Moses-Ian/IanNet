@@ -10,7 +10,7 @@ using IanNet.IanNet.Kernel;
 
 namespace IanNet.IanNet.Layers
 {
-    public partial class Layer
+    public partial class Layer1D
     {
         // the kernels
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>, long> fillRandom1DKernel;

@@ -9,13 +9,13 @@ using ILGPU.Runtime.OpenCL;
 
 namespace IanNet.IanNet.Layers
 {
-    public partial class Layer
+    public partial class Layer2D
     {
-        protected MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer;
+        protected MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> weightsTransposedBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer;
+        protected MemoryBuffer2D<float, Stride2D.DenseX> nodesBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense>  errorsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> targetsBuffer;
         //protected MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer;
@@ -30,11 +30,11 @@ namespace IanNet.IanNet.Layers
         /// </summary>
         /// <param name="inputsBuffer">This should only be null if this layer is an input layer</param>
         /// <param name="downstreamErrorsBuffer">This should only be null if this layer is an output layer</param>
-        public virtual void InitBuffers(MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null)
+        public virtual void InitBuffers(MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null)
         {
             // allocate memory on the gpu
             if (inputsBuffer == null)
-                this.inputsBuffer = device.Allocate1D<float>(inputs.Length);
+                this.inputsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(inputs));
             else
                 this.inputsBuffer = inputsBuffer;
 
@@ -45,7 +45,7 @@ namespace IanNet.IanNet.Layers
             weightsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(weights));
             weightsTransposedBuffer = device.Allocate2DDenseX<float>(new Index2D(weights.GetLength(1), weights.GetLength(0)));
             biasesBuffer = device.Allocate1D<float>(biases.Length);
-            nodesBuffer = device.Allocate1D<float>(nodes.Length);
+            nodesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(nodes));
             errorsBuffer = transientBuffer;
             targetsBuffer = transientBuffer;
         }
@@ -57,17 +57,17 @@ namespace IanNet.IanNet.Layers
 
         #region Get Buffers
 
-        public virtual MemoryBuffer1D<float, Stride1D.Dense> GetInputsBuffer()
+        public virtual MemoryBuffer2D<float, Stride2D.DenseX> GetInputsBuffer()
         {
             return inputsBuffer;
         }
 
-        public virtual MemoryBuffer1D<float, Stride1D.Dense> GetNodesBuffer()
+        public override MemoryBuffer GetNodesBuffer()
         {
             return nodesBuffer;
         }
 
-        public virtual MemoryBuffer1D<float, Stride1D.Dense> GetErrorsBuffer()
+        public override MemoryBuffer GetErrorsBuffer()
         {
             return errorsBuffer;
         }
@@ -81,7 +81,7 @@ namespace IanNet.IanNet.Layers
 
         #region Set Buffers
 
-        public virtual void SetInputsBuffer(MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer)
+        public virtual void SetInputsBuffer(MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer)
         {
             this.inputsBuffer = inputsBuffer;
         }
@@ -91,9 +91,9 @@ namespace IanNet.IanNet.Layers
         //    this.downstreamErrorsBuffer = downstreamErrorsBuffer;
         //}
 
-        public virtual void SetUpstreamErrorsBuffer(MemoryBuffer1D<float, Stride1D.Dense> upstreamErrorsBuffer)
+        public override void SetUpstreamErrorsBuffer(MemoryBuffer upstreamErrorsBuffer)
         {
-            this.upstreamErrorsBuffer = upstreamErrorsBuffer;
+            this.upstreamErrorsBuffer = upstreamErrorsBuffer as MemoryBuffer1D<float, Stride1D.Dense>;
         }
 
         #endregion

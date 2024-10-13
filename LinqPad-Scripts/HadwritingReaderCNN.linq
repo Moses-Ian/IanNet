@@ -1,18 +1,19 @@
 <Query Kind="Program">
-  <Reference>&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\cvextern.dll</Reference>
-  <Reference>&lt;NuGet&gt;\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.dll</Reference>
-  <Reference>&lt;NuGet&gt;\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.xml</Reference>
-  <Reference Relative="..\..\IanAutomation\bin\Debug\net7.0\IanAutomation.dll">F:\projects_csharp\IanAutomation\bin\Debug\net7.0\IanAutomation.dll</Reference>
-  <Reference Relative="..\..\IanAutomation\bin\Debug\net7.0\IanAutomation.pdb">F:\projects_csharp\IanAutomation\bin\Debug\net7.0\IanAutomation.pdb</Reference>
-  <Reference Relative="..\bin\Debug\net7.0\IanNet.deps.json">F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.deps.json</Reference>
-  <Reference Relative="..\bin\Debug\net7.0\IanNet.dll">F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.dll</Reference>
-  <Reference Relative="..\bin\Debug\net7.0\IanNet.pdb">F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.pdb</Reference>
-  <Reference>&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\libusb-1.0.dll</Reference>
-  <Reference>&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\opencv_videoio_ffmpeg490_64.dll</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\cvextern.dll">&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\cvextern.dll</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.dll">&lt;NuGet&gt;\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.dll</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.xml">&lt;NuGet&gt;\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.xml</Reference>
+  <Reference>F:\projects_csharp\IanAutomation\bin\Debug\net7.0\IanAutomation.dll</Reference>
+  <Reference>F:\projects_csharp\IanAutomation\bin\Debug\net7.0\IanAutomation.pdb</Reference>
+  <Reference>F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.deps.json</Reference>
+  <Reference>F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.dll</Reference>
+  <Reference>F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.pdb</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\libusb-1.0.dll">&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\libusb-1.0.dll</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\opencv_videoio_ffmpeg490_64.dll">&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\opencv_videoio_ffmpeg490_64.dll</Reference>
   <Namespace>Emgu.CV</Namespace>
   <Namespace>Emgu.CV.CvEnum</Namespace>
   <Namespace>Emgu.CV.Structure</Namespace>
   <Namespace>IanNet</Namespace>
+  <Namespace>IanNet.Helpers</Namespace>
   <Namespace>IanNet.IanNet</Namespace>
   <Namespace>IanNet.IanNet.Batch</Namespace>
   <Namespace>IanNet.IanNet.DataProcessing</Namespace>
@@ -25,8 +26,8 @@ void Main()
 {
 	//int epochs=10;
 	//int take=int.MaxValue;
-	int epochs = 10;
-	int take = 2;
+	int epochs = 1;
+	int take = 1;
 	bool oldWay = false;
 	int historyStepSize = 1;
 	var netOptions = new Dictionary<string, string>()
@@ -45,7 +46,7 @@ void Main()
 	var values = firstLine.Split(',');
 	int label = int.Parse(values[0]);
 	byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
-	Image image = new Image() { pixels = pixels };
+	Image image = new Image(pixels);
 	
 	var batch = new LabelledBatch<Tuple<object, object>>();
 	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(take);
@@ -54,7 +55,7 @@ void Main()
 		values = line.Split(',');
 		label = int.Parse(values[0]);
 		byte[] pix = values.Skip(1).Select(byte.Parse).ToArray();
-		batch.Add(new Tuple<object, object>(new Image() { pixels = pix }, (Label) label));
+		batch.Add(new Tuple<object, object>(new Image(pix), (Label) label));
 	}
 	
 	var options = new TrainingOptions()
@@ -122,36 +123,42 @@ public Net MakeTheNetwork()
 	var net = new Net();
 	var learningRate = 0.1f;
 	
-	var inputLayer = new Input1DLayer<Image>(784);
+	var inputLayer = new Input2DLayer<Image>(new Shape2D(28, 28));
 	inputLayer.SetPreprocess(Preprocess);
 	
-	var hiddenLayer1 = new Layer1D(100);
-	hiddenLayer1.SetOptimizer(new Adam(learningRate));
+	//var hiddenLayer1 = new Layer(100);
+	//hiddenLayer1.SetOptimizer(new Adam(learningRate));
 	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	//var hiddenLayer2 = new Layer(50);
 	//hiddenLayer2.SetOptimizer(new Adam(learningRate));
 	
-	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
-	var outputLayer = new Output1DLayer<Label>(numberOfLabels);
+	//int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
+	//var outputLayer = new OutputLayer<Label>(numberOfLabels);
 	//outputLayer.SetPostprocess(Postprocess);			// if you want to define your own processing functions, this is how you do it
 	//outputLayer.SetBackPostprocess(BackPostprocess);
-	outputLayer.SetProcessing(new EnumProcessing<Label>());
-	outputLayer.SetOptimizer(new Adam(learningRate));
+	//outputLayer.SetProcessing(new EnumProcessing<Label>());
+	//outputLayer.SetOptimizer(new Adam(learningRate));
 	//outputLayer.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	net.AddLayer(inputLayer);
-	net.AddLayer(hiddenLayer1);
+	//net.AddLayer(hiddenLayer1);
 	//net.AddLayer(hiddenLayer2);
-	net.AddLayer(outputLayer);
+	//net.AddLayer(outputLayer);
 	
 	
 	return net;
 }
 
-static float[] Preprocess(Image image)
+static float[,] Preprocess(Image image)
 {
-	return image.pixels.Select(p => p / 255.0f).ToArray();
+	var result = new float[image.pixels.GetLength(0), image.pixels.GetLength(1)];
+	
+	for (int i=0; i<result.GetLength(0); i++)
+		for (int j=0; j<result.GetLength(1); j++)
+			result[i,j] = image.pixels[i,j] / 255.0f;
+	
+	return result;
 }
 
 static Label Postprocess(float[] values)
@@ -192,7 +199,15 @@ public void ShowTheFirstLetter()
 
 public struct Image
 {
-	public byte[] pixels;
+	public byte[,] pixels;
+	
+	public Image(byte[] p)
+	{
+		pixels = new byte[28, 28];
+		for (int i=0; i<28; i++)
+			for (int j=0; j<28; j++)
+				pixels[i, j] = p[i*28 + j];
+	}
 }
 
 public enum Label

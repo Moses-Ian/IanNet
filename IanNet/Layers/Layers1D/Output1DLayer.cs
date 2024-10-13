@@ -8,14 +8,14 @@ using IanNet.IanNet.DataProcessing;
 
 namespace IanNet.IanNet.Layers
 {
-    public class OutputLayer<T> : Layer
+    public class Output1DLayer<T> : Layer1D
     {
         public delegate T PostprocessDelegate(float[] values);
         public PostprocessDelegate Postprocess;
         public delegate float[] BackPostprocessDelegate(T values);
         private BackPostprocessDelegate _BackPostprocess;
 
-        public OutputLayer(int NumberOfOutputs)
+        public Output1DLayer(int NumberOfOutputs)
             : base(NumberOfOutputs)
         {
 
@@ -66,7 +66,7 @@ namespace IanNet.IanNet.Layers
 
         public override float[] BackPostprocess(object values)
         {
-            return _BackPostprocess((T) values);
+            return _BackPostprocess((T)values);
         }
 
         public override string ToString()

@@ -57,10 +57,12 @@ namespace IanNet.IanNet
             Layers.First().Compile(device);
             for (int i = 1; i < Layers.Count; i++)
             {
-                var options = new Dictionary<string, string>()
+                var options = new Dictionary<string, string>();
+                var keyValuePairs = Layers[i - 1].GetOptionsInfo();
+                foreach (var kvp in keyValuePairs)
                 {
-                    {  "NumberOfInputs", Layers[i-1].NumberOfNodes.ToString() }
-                };
+                    options.Add(kvp.Key, kvp.Value);
+                }
                 Layers[i].Compile(device, Layers[i-1].GetNodesBuffer(), options);
             }
 

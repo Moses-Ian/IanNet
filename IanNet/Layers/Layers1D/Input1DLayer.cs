@@ -8,25 +8,27 @@ using System.Threading.Tasks;
 
 namespace IanNet.IanNet.Layers
 {
-    public class InputLayer<T> : Layer
+    public class Input1DLayer<T> : Layer1D
     {
         public delegate float[] PreprocessDelegate(T input);
         private PreprocessDelegate _Preprocess;
 
-        public InputLayer(int NumberOfInputs)
+        public Input1DLayer(int NumberOfInputs)
             : base(NumberOfInputs)
         {
             this.NumberOfInputs = NumberOfInputs;
         }
 
-        public override void Compile(Accelerator device, MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null, Dictionary<string, string> Options = null)
+        public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
         {
+            var InputsBuffer = inputsBuffer as MemoryBuffer1D<float, Stride1D.Dense>;
+
             this.device = device;
             this.Options = Options;
             
             InitCpu();
 
-            InitBuffers(inputsBuffer);
+            InitBuffers(InputsBuffer);
 
             CompileKernels();
 

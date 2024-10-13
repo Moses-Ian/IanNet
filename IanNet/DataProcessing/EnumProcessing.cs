@@ -25,6 +25,5 @@ namespace IanNet.IanNet.DataProcessing
             result[Convert.ToInt32(label)] = 1;
             return result;
         }
-
     }
 }
