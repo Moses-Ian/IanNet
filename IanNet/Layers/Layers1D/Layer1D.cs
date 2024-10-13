@@ -10,6 +10,9 @@ using IanNet.IanNet.Optimizers;
 
 namespace IanNet.IanNet.Layers
 {
+    /// <summary>
+    /// This is meant to be a generic layer, but it's implemented as a dense layer
+    /// </summary>
     public partial class Layer1D : Layer
     {
         // gpu things

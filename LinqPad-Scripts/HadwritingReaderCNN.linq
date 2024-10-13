@@ -35,7 +35,7 @@ void Main()
 		{ "ForceCPU", "false" }
 	};
 
-	ShowTheFirstLetter();
+	//ShowTheFirstLetter();
 	var Net = MakeTheNetwork();
 	Console.WriteLine(Net.ToString());
 
@@ -126,7 +126,7 @@ public Net MakeTheNetwork()
 	var inputLayer = new Input2DLayer<Image>(new Shape2D(28, 28));
 	inputLayer.SetPreprocess(Preprocess);
 	
-	//var hiddenLayer1 = new Layer(100);
+	var convLayer = new Conv2DLayer(1, new Shape2D(3,3));
 	//hiddenLayer1.SetOptimizer(new Adam(learningRate));
 	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
@@ -142,7 +142,7 @@ public Net MakeTheNetwork()
 	//outputLayer.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	net.AddLayer(inputLayer);
-	//net.AddLayer(hiddenLayer1);
+	net.AddLayer(convLayer);
 	//net.AddLayer(hiddenLayer2);
 	//net.AddLayer(outputLayer);
 	

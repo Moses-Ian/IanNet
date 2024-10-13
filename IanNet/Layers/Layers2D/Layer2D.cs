@@ -23,7 +23,7 @@ namespace IanNet.IanNet.Layers
 
         // core data
         public float[,] weights;
-        public float[] biases;
+        public float[,] biases;
         public float[,] inputs;
         public float[,] nodes;
         public Shape2D InputShape;
@@ -93,7 +93,7 @@ namespace IanNet.IanNet.Layers
         public virtual void InitNetwork()
         {
             fillRandom2DKernel(GetIndex2D(weights), weightsBuffer, random.NextInt64());
-            fillRandom1DKernel(biases.Length, biasesBuffer, random.NextInt64());
+            //fillRandom1DKernel(biases.Length, biasesBuffer, random.NextInt64());
         }
 
         public override void Forward()
@@ -142,12 +142,12 @@ namespace IanNet.IanNet.Layers
             return weights;
         }
 
-        public virtual float[] GetBiases()
+        public virtual float[,] GetBiases()
         {
             if (biasesBuffer == null)
                 return null;
 
-            biases = biasesBuffer.GetAsArray1D();
+            biases = biasesBuffer.GetAsArray2D();
             return biases;
         }
 

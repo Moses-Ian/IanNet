@@ -14,7 +14,7 @@ namespace IanNet.IanNet.Layers
         protected MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> weightsTransposedBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer;
+        protected MemoryBuffer2D<float, Stride2D.DenseX> biasesBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> nodesBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense>  errorsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> targetsBuffer;
@@ -40,11 +40,11 @@ namespace IanNet.IanNet.Layers
 
             // this is a buffer for holding transient data
             // as an optimization, other buffers will have other names but will point to this
-            transientBuffer = device.Allocate1D<float>(nodes.Length);
+            //transientBuffer = device.Allocate1D<float>(nodes.Length);
 
             weightsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(weights));
             weightsTransposedBuffer = device.Allocate2DDenseX<float>(new Index2D(weights.GetLength(1), weights.GetLength(0)));
-            biasesBuffer = device.Allocate1D<float>(biases.Length);
+            biasesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(biases));
             nodesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(nodes));
             errorsBuffer = transientBuffer;
             targetsBuffer = transientBuffer;
