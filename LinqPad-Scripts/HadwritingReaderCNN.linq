@@ -17,6 +17,7 @@
   <Namespace>IanNet.IanNet</Namespace>
   <Namespace>IanNet.IanNet.Batch</Namespace>
   <Namespace>IanNet.IanNet.DataProcessing</Namespace>
+  <Namespace>IanNet.IanNet.Initializers</Namespace>
   <Namespace>IanNet.IanNet.Layers</Namespace>
   <Namespace>IanNet.IanNet.Optimizers</Namespace>
   <Namespace>System.Drawing</Namespace>
@@ -42,13 +43,25 @@ void Main()
 	Net.Compile(netOptions);
 	Console.WriteLine("Compiled successfully");
 	
-	string firstLine = File.ReadLines(trainingFilepath).First();
-	var values = firstLine.Split(',');
-	int label = int.Parse(values[0]);
-	byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
+	//string firstLine = File.ReadLines(trainingFilepath).First();
+	//var values = firstLine.Split(',');
+	//int label = int.Parse(values[0]);
+	//byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
+	//Image image = new Image(pixels);
+	byte[] pixels = new byte[] { 1, 6, 2, 5, 3, 1, 7, 0, 4 };
 	Image image = new Image(pixels);
 	
-	var batch = new LabelledBatch<Tuple<object, object>>();
+	var output = Net.Forward(image);
+	Console.WriteLine("Inputs");
+	Console.WriteLine(Net.Layers.Last().GetInputs());
+	Console.WriteLine("Weights");
+	Console.WriteLine(Net.Layers.Last().GetWeights());
+	Console.WriteLine("Outputs");
+	Console.WriteLine(output);
+	Console.WriteLine("done");
+	return;
+	
+	/*var batch = new LabelledBatch<Tuple<object, object>>();
 	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(take);
 	foreach(var line in lines)
 	{
@@ -111,7 +124,7 @@ void Main()
 	
 	Console.WriteLine("done");
 	CvInvoke.WaitKey(0);
-	CvInvoke.DestroyAllWindows();
+	CvInvoke.DestroyAllWindows();*/
 }
 
 
@@ -123,10 +136,12 @@ public Net MakeTheNetwork()
 	var net = new Net();
 	var learningRate = 0.1f;
 	
-	var inputLayer = new Input2DLayer<Image>(new Shape2D(28, 28));
+	var inputLayer = new Input2DLayer<Image>(new Shape2D(3, 3));
 	inputLayer.SetPreprocess(Preprocess);
 	
-	var convLayer = new Conv2DLayer(1, new Shape2D(3,3));
+	var convLayer = new Conv2DLayer(1, new Shape2D(2, 2));
+	//convLayer.SetInitializer(new RawData2D(new float[,] { { 1, 2 } , { -1, 0 } }, new float[,] { { 1, 2 } , { -1, 0 } }));
+	convLayer.SetInitializer(new HeUniform2D(4));
 	//hiddenLayer1.SetOptimizer(new Adam(learningRate));
 	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
@@ -156,7 +171,7 @@ static float[,] Preprocess(Image image)
 	
 	for (int i=0; i<result.GetLength(0); i++)
 		for (int j=0; j<result.GetLength(1); j++)
-			result[i,j] = image.pixels[i,j] / 255.0f;
+			result[i,j] = image.pixels[i,j];// / 255.0f;
 	
 	return result;
 }
@@ -203,10 +218,10 @@ public struct Image
 	
 	public Image(byte[] p)
 	{
-		pixels = new byte[28, 28];
-		for (int i=0; i<28; i++)
-			for (int j=0; j<28; j++)
-				pixels[i, j] = p[i*28 + j];
+		pixels = new byte[3, 3];
+		for (int i=0; i<3; i++)
+			for (int j=0; j<3; j++)
+				pixels[i, j] = p[i*3 + j];
 	}
 }
 

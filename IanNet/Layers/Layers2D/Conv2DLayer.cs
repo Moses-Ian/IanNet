@@ -8,6 +8,7 @@ using ILGPU;
 using ILGPU.Runtime.Cuda;
 using IanNet.IanNet.Optimizers;
 using IanNet.Helpers;
+using System.ComponentModel.Design;
 
 namespace IanNet.IanNet.Layers
 {
@@ -100,20 +101,29 @@ namespace IanNet.IanNet.Layers
             //errors = new float[NumberOfNodes];
         }
 
-        public virtual void InitNetwork()
+        public override void CompileKernels()
         {
-            fillRandom2DKernel(GetIndex2D(weights), weightsBuffer, random.NextInt64());
-            //fillRandom1DKernel(biases.Length, biasesBuffer, random.NextInt64());
+            forwardKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>>(crossCorrelation);
+        }
+
+        public override void InitNetwork()
+        {
+            initializer.Compile(device);
+            initializer.InitializeNetwork(weightsBuffer, biasesBuffer);
         }
 
         public override void Forward()
         {
             // run the kernels
-            //forwardKernel(nodes.Length, inputsBuffer, weightsBuffer, biasesBuffer, nodesBuffer);
+            forwardKernel(GetIndex2D(nodes), inputsBuffer, weightsBuffer, nodesBuffer);
             //activationKernel(nodes.Length, nodesBuffer);
         }
 
-        public virtual void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
+        public override void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
         {
             // run the kernels
             //forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
@@ -204,6 +214,25 @@ namespace IanNet.IanNet.Layers
                 new KeyValuePair<string, string>("InputWidth", InputShape.Width.ToString()),
                 new KeyValuePair<string, string>("InputHeight", InputShape.Height.ToString()),
             };
+        }
+
+        #endregion
+
+        #region kernels
+
+        public Action<
+            Index2D, 
+            ArrayView2D<float, Stride2D.DenseX>, 
+            ArrayView2D<float, Stride2D.DenseX>, 
+            ArrayView2D<float, Stride2D.DenseX>> forwardKernel;
+
+        // assuming "valid"
+        static void crossCorrelation(Index2D outputIndex, ArrayView2D<float, Stride2D.DenseX> input, ArrayView2D<float, Stride2D.DenseX> filter, ArrayView2D<float, Stride2D.DenseX> output)
+        {
+            output[outputIndex] = 0;
+            for (int i = 0; i < filter.Extent.X; i++)
+                for (int j = 0; j < filter.Extent.Y; j++)
+                    output[outputIndex] += input[i + outputIndex.X, j + outputIndex.Y] * filter[i, j];
         }
 
         #endregion

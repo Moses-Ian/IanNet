@@ -8,6 +8,7 @@ using ILGPU;
 using ILGPU.Runtime.Cuda;
 using IanNet.IanNet.Optimizers;
 using IanNet.Helpers;
+using IanNet.IanNet.Initializers;
 
 namespace IanNet.IanNet.Layers
 {
@@ -19,7 +20,8 @@ namespace IanNet.IanNet.Layers
         // architecture things
         Random random = new Random();
         public float gradientClip = 0.1f;
-        IOptimizer optimizer;
+        public IOptimizer optimizer;
+        public IInitializer initializer;
 
         // core data
         public float[,] weights;
@@ -131,9 +133,14 @@ namespace IanNet.IanNet.Layers
             //optimizer.SetSize(InputShape, NumberOfNodes);
         }
 
+        public void SetInitializer(IInitializer initializer)
+        {
+            this.initializer = initializer;
+        }
+
         #region Get Data
 
-        public virtual float[,] GetWeights()
+        public override float[,] GetWeights()
         {
             if (weightsBuffer == null)
                 return null;
@@ -151,7 +158,7 @@ namespace IanNet.IanNet.Layers
             return biases;
         }
 
-        public virtual float[,] GetInputs()
+        public override float[,] GetInputs()
         {
             if (inputsBuffer == null)
                 return null;

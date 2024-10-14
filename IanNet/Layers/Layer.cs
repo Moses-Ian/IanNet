@@ -26,5 +26,7 @@ namespace IanNet.IanNet.Layers
         public abstract void PassBackError();
         public abstract void BackPropogate();
         public abstract float[] GetErrors();
+        public abstract Array GetInputs();
+        public abstract Array GetWeights();
     }
 }

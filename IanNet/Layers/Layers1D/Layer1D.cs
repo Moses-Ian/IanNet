@@ -130,7 +130,7 @@ namespace IanNet.IanNet.Layers
 
         #region Get Data
 
-        public virtual float[,] GetWeights()
+        public override float[,] GetWeights()
         {
             if (weightsBuffer == null)
                 return null;
@@ -148,7 +148,7 @@ namespace IanNet.IanNet.Layers
             return biases;
         }
 
-        public virtual float[] GetInputs()
+        public override float[] GetInputs()
         {
             if (inputsBuffer == null)
                 return null;
