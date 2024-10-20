@@ -63,6 +63,8 @@ namespace IanNet.IanNet.Kernel
             output[node] = sum;
         }
 
+        #region Activation Functions
+
         public static void sigmoid(Index1D node, ArrayView1D<float, Stride1D.Dense> values)
         {
             // this 0.1f came from trying to prevent gradient explosion
@@ -73,6 +75,20 @@ namespace IanNet.IanNet.Kernel
         {
             results[node] = values[node] * (1f - values[node]);
         }
+
+        public static void relu(Index1D node, ArrayView1D<float, Stride1D.Dense> values)
+        {
+            values[node] = XMath.Max(values[node], 0);
+            //if (values[node] <= 0)
+            //    values[node] = 0;
+        }
+
+        public static void reluPrime(Index1D node, ArrayView1D<float, Stride1D.Dense> values, ArrayView1D<float, Stride1D.Dense> results)
+        {
+            results[node] = values[node] > 0 ? 1f : 0f;
+        }
+
+        #endregion
 
         public static void getError(Index1D node, ArrayView1D<float, Stride1D.Dense> guess, ArrayView1D<float, Stride1D.Dense> target, ArrayView1D<float, Stride1D.Dense> error)
         {

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IanNet.IanNet.Kernel;
+using IanNet.IanNet.Activation;
 
 namespace IanNet.IanNet.Layers
 {
@@ -57,7 +58,7 @@ namespace IanNet.IanNet.Layers
                 ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(Kernels.forwardBatch);
-            activationKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>>(Kernels.sigmoid);
+            activationKernel = device.LoadAutoGroupedStreamKernel(IActivation.Activate);
             getErrorKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>,
@@ -73,6 +74,8 @@ namespace IanNet.IanNet.Layers
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(Kernels.multiply);
         }
+
+        
 
     }
 }

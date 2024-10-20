@@ -1,19 +1,20 @@
 <Query Kind="Program">
-  <Reference>&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\cvextern.dll</Reference>
-  <Reference>&lt;NuGet&gt;\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.dll</Reference>
-  <Reference>&lt;NuGet&gt;\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.xml</Reference>
-  <Reference Relative="..\..\IanAutomation\bin\Debug\net7.0\IanAutomation.dll">F:\projects_csharp\IanAutomation\bin\Debug\net7.0\IanAutomation.dll</Reference>
-  <Reference Relative="..\..\IanAutomation\bin\Debug\net7.0\IanAutomation.pdb">F:\projects_csharp\IanAutomation\bin\Debug\net7.0\IanAutomation.pdb</Reference>
-  <Reference Relative="..\bin\Debug\net7.0\IanNet.deps.json">F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.deps.json</Reference>
-  <Reference Relative="..\bin\Debug\net7.0\IanNet.dll">F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.dll</Reference>
-  <Reference Relative="..\bin\Debug\net7.0\IanNet.pdb">F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.pdb</Reference>
-  <Reference>&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\libusb-1.0.dll</Reference>
-  <Reference>&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\opencv_videoio_ffmpeg490_64.dll</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\cvextern.dll">&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\cvextern.dll</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.dll">&lt;NuGet&gt;\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.dll</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.xml">&lt;NuGet&gt;\emgu.cv\4.9.0.5494\lib\netstandard2.0\Emgu.CV.xml</Reference>
+  <Reference>F:\projects_csharp\IanAutomation\bin\Debug\net7.0\IanAutomation.dll</Reference>
+  <Reference>F:\projects_csharp\IanAutomation\bin\Debug\net7.0\IanAutomation.pdb</Reference>
+  <Reference>F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.deps.json</Reference>
+  <Reference>F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.dll</Reference>
+  <Reference>F:\projects_csharp\IanNet\bin\Debug\net7.0\IanNet.pdb</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\libusb-1.0.dll">&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\libusb-1.0.dll</Reference>
+  <Reference Relative="..\..\..\..\.nuget\packages\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\opencv_videoio_ffmpeg490_64.dll">&lt;NuGet&gt;\emgu.cv.runtime.windows\4.9.0.5494\runtimes\win-x64\native\opencv_videoio_ffmpeg490_64.dll</Reference>
   <Namespace>Emgu.CV</Namespace>
   <Namespace>Emgu.CV.CvEnum</Namespace>
   <Namespace>Emgu.CV.Structure</Namespace>
   <Namespace>IanNet</Namespace>
   <Namespace>IanNet.IanNet</Namespace>
+  <Namespace>IanNet.IanNet.Activation</Namespace>
   <Namespace>IanNet.IanNet.Batch</Namespace>
   <Namespace>IanNet.IanNet.DataProcessing</Namespace>
   <Namespace>IanNet.IanNet.Layers</Namespace>
@@ -26,7 +27,7 @@ void Main()
 	//int epochs=10;
 	//int take=int.MaxValue;
 	int epochs = 10;
-	int take = 2;
+	int take = 1;
 	bool oldWay = false;
 	int historyStepSize = 1;
 	var netOptions = new Dictionary<string, string>()
@@ -67,7 +68,7 @@ void Main()
 	
 	var earlyStopping = new EarlyStopping();
 	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfLossIsNaN);
-	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfAccuracyIsHigh(0.99f));
+	//earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfAccuracyIsHigh(0.99f));
 	Net.SetEarlyStopping(earlyStopping);
 	
 	var stopwatch = new Stopwatch();
@@ -75,11 +76,11 @@ void Main()
 
 	Net.Train(batch, options);
 	
-	Label result = (Label) Net.Forward(image);
-	Console.WriteLine(result.ToString());
-	
 	stopwatch.Stop();
 	Console.WriteLine($"Training took {stopwatch.ElapsedMilliseconds} ms");
+	
+	Label result = (Label) Net.Forward(image);
+	Console.WriteLine(result.ToString());
 	
 	var graph = Net.history.ToAccuracyGraph(400, 200);
 	
@@ -127,6 +128,7 @@ public Net MakeTheNetwork()
 	
 	var hiddenLayer1 = new Layer1D(100);
 	hiddenLayer1.SetOptimizer(new Adam(learningRate));
+	hiddenLayer1.SetActivation(new ReLU());
 	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	//var hiddenLayer2 = new Layer(50);
@@ -138,6 +140,7 @@ public Net MakeTheNetwork()
 	//outputLayer.SetBackPostprocess(BackPostprocess);
 	outputLayer.SetProcessing(new EnumProcessing<Label>());
 	outputLayer.SetOptimizer(new Adam(learningRate));
+	//outputLayer.SetActivation(new ReLU());
 	//outputLayer.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	net.AddLayer(inputLayer);

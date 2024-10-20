@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IanNet.IanNet.Kernel;
+using IanNet.IanNet.Activation;
 
 namespace IanNet.IanNet.Optimizers
 {
@@ -20,6 +21,7 @@ namespace IanNet.IanNet.Optimizers
         public float beta1;
         public float beta2;
         public float epsilon = 1e-8f;
+        public IActivation1D IActivation;
 
         // core data
         public int NumberOfNodes;
@@ -92,11 +94,29 @@ namespace IanNet.IanNet.Optimizers
             #region Weights
 
             // calculate gradient
+            //Console.WriteLine("old weights:");
+            float[,] oldWeights = GetWeights();
+            //Console.WriteLine(oldWeights);
             gradientKernel(NumberOfNodes, nodesBuffer, tempBuffer);    // this gives us the unactivated output
             elementMultiplyKernel(NumberOfNodes, errorsBuffer, tempBuffer, tempBuffer); // this gives us scaled errors
             vectorMultiplyKernel(size, tempBuffer, inputsBuffer, gradientsBuffer);
 
             adam2DKernel(size, learningRate, beta1, beta2, epsilon, gradientsBuffer, mBuffer, vBuffer, weightsBuffer);
+
+            //Console.WriteLine("new weights:");
+            float[,] newWeights = GetWeights();
+            //Console.WriteLine(newWeights);
+
+            bool same = true;
+            for (int i = 0; i < oldWeights.GetLength(0); i++)
+                for (int j = 0; j < oldWeights.GetLength(1); j++)
+                    if (oldWeights[i, j] != newWeights[i, j])
+                    {
+                        same = false;
+                        break;
+                    }
+            Console.WriteLine($"The weights are {(same ? "the same" : "different")}");
+
 
             #endregion
 
@@ -168,7 +188,7 @@ namespace IanNet.IanNet.Optimizers
 
         public void CompileKernels()
         {
-            gradientKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>, ArrayView1D<float, Stride1D.Dense>>(Kernels.sigmoidPrime);
+            gradientKernel = device.LoadAutoGroupedStreamKernel(IActivation.Reverse);
             elementMultiplyKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>,
@@ -221,5 +241,76 @@ namespace IanNet.IanNet.Optimizers
         {
             return new Index2D(matrix.GetLength(0), matrix.GetLength(1));
         }
+
+        public void SetActivation(IActivation1D IActivation)
+        {
+            this.IActivation = IActivation;
+        }
+
+        #region Get Data
+
+        public float[,] GetWeights()
+        {
+            if (weightsBuffer == null)
+                return null;
+
+            float[,] weights = weightsBuffer.GetAsArray2D();
+            return weights;
+        }
+
+        //public virtual float[] GetBiases()
+        //{
+        //    if (biasesBuffer == null)
+        //        return null;
+
+        //    biases = biasesBuffer.GetAsArray1D();
+        //    return biases;
+        //}
+
+        //public override float[] GetInputs()
+        //{
+        //    if (inputsBuffer == null)
+        //        return null;
+
+        //    inputs = inputsBuffer.GetAsArray1D();
+        //    return inputs;
+        //}
+
+        //public override object GetOutputs()
+        //{
+        //    if (nodesBuffer == null)
+        //        return null;
+
+        //    nodes = nodesBuffer.GetAsArray1D();
+        //    return nodes;
+        //}
+
+        //public virtual float[] GetNodes()
+        //{
+        //    if (nodesBuffer == null)
+        //        return null;
+
+        //    nodes = nodesBuffer.GetAsArray1D();
+        //    return nodes;
+        //}
+
+        //public override float[] GetErrors()
+        //{
+        //    if (errorsBuffer == null)
+        //        return null;
+
+        //    errors = errorsBuffer.GetAsArray1D();
+        //    return errors;
+        //}
+
+        //public override List<KeyValuePair<string, string>> GetOptionsInfo()
+        //{
+        //    return new List<KeyValuePair<string, string>>
+        //    {
+        //        new KeyValuePair<string, string>("NumberOfInputs", NumberOfInputs.ToString())
+        //    };
+        //}
+
+        #endregion
     }
 }

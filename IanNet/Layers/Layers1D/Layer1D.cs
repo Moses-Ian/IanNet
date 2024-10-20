@@ -7,6 +7,7 @@ using ILGPU.Runtime;
 using ILGPU;
 using ILGPU.Runtime.Cuda;
 using IanNet.IanNet.Optimizers;
+using IanNet.IanNet.Activation;
 
 namespace IanNet.IanNet.Layers
 {
@@ -22,6 +23,8 @@ namespace IanNet.IanNet.Layers
         Random random = new Random();
         public float gradientClip = 0.1f;
         IOptimizer optimizer;
+        public IActivation1D IActivation = new Sigmoid();
+
 
         // core data
         public float[,] weights;
@@ -96,8 +99,14 @@ namespace IanNet.IanNet.Layers
         public override void Forward()
         {
             // run the kernels
+            //Console.WriteLine("inputs:");
+            //Console.WriteLine(GetInputs());
             forwardKernel(nodes.Length, inputsBuffer, weightsBuffer, biasesBuffer, nodesBuffer);
+            //Console.WriteLine("nodes:");
+            //Console.WriteLine(GetNodes());
             activationKernel(nodes.Length, nodesBuffer);
+            //Console.WriteLine("nodes after activation:");
+            //Console.WriteLine(GetNodes());
         }
 
         public virtual void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
@@ -126,6 +135,13 @@ namespace IanNet.IanNet.Layers
         {
             this.optimizer = optimizer;
             optimizer.SetSize(NumberOfInputs, NumberOfNodes);
+            optimizer.SetActivation(IActivation);
+        }
+
+        public void SetActivation(IActivation1D IActivation)
+        {
+            this.IActivation = IActivation;
+            optimizer.SetActivation(IActivation);
         }
 
         #region Get Data

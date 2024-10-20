@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IanNet.IanNet.Activation;
 
 namespace IanNet.IanNet.Optimizers
 {
@@ -21,5 +22,6 @@ namespace IanNet.IanNet.Optimizers
         public void CompileKernels();
         public void InitGpu(Accelerator device, Dictionary<string, string> Options = null);
         public void InitNetwork();
+        public void SetActivation(IActivation1D activation);
     }
 }

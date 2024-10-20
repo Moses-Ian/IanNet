@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IanNet.IanNet.Kernel;
+using IanNet.IanNet.Activation;
 
 namespace IanNet.IanNet.Optimizers
 {
@@ -17,6 +18,7 @@ namespace IanNet.IanNet.Optimizers
 
         // architecture things
         public float learningRate;
+        public IActivation1D IActivation;
 
         // core data
         public int NumberOfNodes;
@@ -126,7 +128,7 @@ namespace IanNet.IanNet.Optimizers
 
         public void CompileKernels()
         {
-            gradientKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>, ArrayView1D<float, Stride1D.Dense>>(Kernels.sigmoidPrime);
+            gradientKernel = device.LoadAutoGroupedStreamKernel(IActivation.Reverse);
             elementMultiplyKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>,
@@ -155,5 +157,10 @@ namespace IanNet.IanNet.Optimizers
         }
 
         public void InitNetwork() { }
+
+        public void SetActivation(IActivation1D IActivation)
+        {
+            this.IActivation = IActivation;
+        }
     }
 }
