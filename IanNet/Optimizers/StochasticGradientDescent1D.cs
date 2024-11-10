@@ -11,7 +11,7 @@ using IanNet.IanNet.Activation;
 
 namespace IanNet.IanNet.Optimizers
 {
-    public class StochasticGradientDescent : IOptimizer
+    public class StochasticGradientDescent1D : IOptimizer1D
     {
         // gpu things
         public Accelerator device;
@@ -62,7 +62,7 @@ namespace IanNet.IanNet.Optimizers
         protected MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer;
 
-        public StochasticGradientDescent(float learningRate = 0.1f)
+        public StochasticGradientDescent1D(float learningRate = 0.1f)
         {
             this.learningRate = learningRate;
         }

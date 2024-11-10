@@ -9,15 +9,15 @@ using IanNet.IanNet.Kernel;
 
 namespace IanNet.IanNet.Activation
 {
-    public class ReLU : IActivation1D
+    public class ReLU1D : IActivation1D
     {
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> Activate { get; }
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>, ArrayView1D<float, Stride1D.Dense>> Reverse { get; }
 
-        public ReLU()
+        public ReLU1D()
         {
-            Activate = Kernels.relu;
-            Reverse = Kernels.reluPrime;
+            Activate = Kernels.relu1D;
+            Reverse = Kernels.relu1DPrime;
         }
     }
 }

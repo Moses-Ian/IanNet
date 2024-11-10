@@ -11,7 +11,7 @@ using IanNet.IanNet.Activation;
 
 namespace IanNet.IanNet.Optimizers
 {
-    public class Adam : IOptimizer
+    public class Adam : IOptimizer1D
     {
         // gpu things
         public Accelerator device;

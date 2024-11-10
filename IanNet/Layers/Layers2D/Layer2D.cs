@@ -9,6 +9,7 @@ using ILGPU.Runtime.Cuda;
 using IanNet.IanNet.Optimizers;
 using IanNet.Helpers;
 using IanNet.IanNet.Initializers;
+using IanNet.IanNet.Activation;
 
 namespace IanNet.IanNet.Layers
 {
@@ -20,8 +21,9 @@ namespace IanNet.IanNet.Layers
         // architecture things
         Random random = new Random();
         public float gradientClip = 0.1f;
-        public IOptimizer optimizer;
+        public IOptimizer2D optimizer;
         public IInitializer initializer;
+        public IActivation2D IActivation = null;
 
         // core data
         public float[,] weights;
@@ -36,12 +38,12 @@ namespace IanNet.IanNet.Layers
         public float[,] weightsTransposed;
         public float[] errors;
 
-        public Layer2D(Shape2D NodeShape, IOptimizer optimizer = null)
+        public Layer2D(Shape2D NodeShape, IOptimizer2D optimizer = null)
         {
             this.NodeShape = NodeShape;
 
             // in case the dev wants to use the default
-            this.optimizer = optimizer ?? new StochasticGradientDescent(0.1f);
+            this.optimizer = optimizer;// ?? new StochasticGradientDescent1D(0.1f);
         }
 
         public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -127,7 +129,7 @@ namespace IanNet.IanNet.Layers
             optimizer.BackPropogate();
         }
 
-        public void SetOptimizer(IOptimizer optimizer)
+        public void SetOptimizer(IOptimizer2D optimizer)
         {
             this.optimizer = optimizer;
             //optimizer.SetSize(InputShape, NumberOfNodes);
@@ -136,6 +138,12 @@ namespace IanNet.IanNet.Layers
         public void SetInitializer(IInitializer initializer)
         {
             this.initializer = initializer;
+        }
+
+        public void SetActivation(IActivation2D activation)
+        {
+            this.IActivation = IActivation;
+            optimizer?.SetActivation(activation);
         }
 
         #region Get Data

@@ -23,7 +23,7 @@ namespace IanNet.IanNet.Layers
         // architecture things
         Random random = new Random();
         public float gradientClip = 0.1f;
-        IOptimizer optimizer;
+        IOptimizer1D optimizer;
 
         // core data
         //public float[,] weights;
@@ -40,14 +40,14 @@ namespace IanNet.IanNet.Layers
         public float[,] weightsTransposed;
         public float[] errors;
 
-        public Conv2DLayer(int NumberOfFilters, Shape2D FilterShape, IOptimizer optimizer = null)
+        public Conv2DLayer(int NumberOfFilters, Shape2D FilterShape, IOptimizer1D optimizer = null)
             : base(NodeShape: null) // we need to know the size of the input to determine the size of the output
         {
             this.NumberOfFilters = NumberOfFilters;
             this.FilterShape = FilterShape;
 
             // in case the dev wants to use the default
-            this.optimizer = optimizer ?? new StochasticGradientDescent(0.1f);
+            this.optimizer = optimizer ?? new StochasticGradientDescent1D(0.1f);
         }
 
         public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -145,7 +145,7 @@ namespace IanNet.IanNet.Layers
             optimizer.BackPropogate();
         }
 
-        public void SetOptimizer(IOptimizer optimizer)
+        public void SetOptimizer(IOptimizer1D optimizer)
         {
             this.optimizer = optimizer;
             //optimizer.SetSize(InputShape, NumberOfNodes);

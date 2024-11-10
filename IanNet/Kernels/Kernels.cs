@@ -76,14 +76,26 @@ namespace IanNet.IanNet.Kernel
             results[node] = values[node] * (1f - values[node]);
         }
 
-        public static void relu(Index1D node, ArrayView1D<float, Stride1D.Dense> values)
+        public static void relu1D(Index1D node, ArrayView1D<float, Stride1D.Dense> values)
         {
             values[node] = XMath.Max(values[node], 0);
             //if (values[node] <= 0)
             //    values[node] = 0;
         }
 
-        public static void reluPrime(Index1D node, ArrayView1D<float, Stride1D.Dense> values, ArrayView1D<float, Stride1D.Dense> results)
+        public static void relu1DPrime(Index1D node, ArrayView1D<float, Stride1D.Dense> values, ArrayView1D<float, Stride1D.Dense> results)
+        {
+            results[node] = values[node] > 0 ? 1f : 0f;
+        }
+
+        public static void relu2D(Index2D node, ArrayView2D<float, Stride2D.DenseX> values)
+        {
+            values[node] = XMath.Max(values[node], 0);
+            //if (values[node] <= 0)
+            //    values[node] = 0;
+        }
+
+        public static void relu2DPrime(Index2D node, ArrayView2D<float, Stride2D.DenseX> values, ArrayView2D<float, Stride2D.DenseX> results)
         {
             results[node] = values[node] > 0 ? 1f : 0f;
         }

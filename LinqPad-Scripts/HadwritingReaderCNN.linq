@@ -15,6 +15,7 @@
   <Namespace>IanNet</Namespace>
   <Namespace>IanNet.Helpers</Namespace>
   <Namespace>IanNet.IanNet</Namespace>
+  <Namespace>IanNet.IanNet.Activation</Namespace>
   <Namespace>IanNet.IanNet.Batch</Namespace>
   <Namespace>IanNet.IanNet.DataProcessing</Namespace>
   <Namespace>IanNet.IanNet.Initializers</Namespace>
@@ -142,7 +143,7 @@ public Net MakeTheNetwork()
 	var convLayer = new Conv2DLayer(1, new Shape2D(3, 3));
 	//convLayer.SetInitializer(new RawData2D(new float[,] { { 1, 2 } , { -1, 0 } }, new float[,] { { 1, 2 } , { -1, 0 } }));
 	convLayer.SetInitializer(new HeUniform2D(9));
-	convLayer.SetActivation(new ReLU());
+	convLayer.SetActivation(new ReLU2D());
 	//hiddenLayer1.SetOptimizer(new Adam(learningRate));
 	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
