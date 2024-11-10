@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ILGPU;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,8 +14,20 @@ namespace IanNet.Helpers
 
         public Shape2D(int width, int height)
         {
-            Width = width;
+            Width  = width;
             Height = height;
+        }
+
+        public Shape2D(LongIndex2D extent)
+        {
+            Width  = (int) extent.X;
+            Height = (int) extent.Y;
+        }
+
+        public Shape2D(float[,] matrix)
+        {
+            Width  = matrix.GetLength(1);
+            Height = matrix.GetLength(0);
         }
     }
 }

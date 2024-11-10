@@ -125,6 +125,11 @@ namespace IanNet.IanNet.Kernel
             result[index] = A[index] * B[index];
         }
 
+        public static void elementMultiply2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            result[index] = A[index] * B[index];
+        }
+
         public static void elementDivide(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> result)
         {
             result[index] = A[index] / B[index];
@@ -178,6 +183,18 @@ namespace IanNet.IanNet.Kernel
         public static void vectorMultiply(Index2D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView2D<float, Stride2D.DenseX> result)
         {
             result[index.X, index.Y] = A[index.X] * B[index.Y];
+        }
+
+        public static void matrixMultiply(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            int row = index.X;
+            int col = index.Y;
+
+            float sum = 0;
+            for (int k = 0; k < row; k++)
+                sum += A[row, k] * B[k, col];
+
+            result[row, col] = sum;
         }
 
         public static void elementAdd2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> B, ArrayView2D<float, Stride2D.DenseX> result)
@@ -268,6 +285,19 @@ namespace IanNet.IanNet.Kernel
 
             // and update the weights
             weights[index] += gradients[index];
+        }
+
+        public static void maxPool(Index2D index, int filterWidth, int filterHeight, ArrayView2D<float, Stride2D.DenseX> inputs, ArrayView2D<float, Stride2D.DenseX> results)
+        {
+            int row = index.X * filterHeight;
+            int col = index.Y * filterWidth;
+
+            var max = float.MinValue;
+            for (int i = 0; i < filterHeight; i++)
+                for (int j = 0; j < filterWidth; j++)
+                    max = MathF.Max(max, inputs[row + i, col + j]);
+
+            results[index] = max;
         }
     }
 }

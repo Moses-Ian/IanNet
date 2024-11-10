@@ -123,12 +123,12 @@ namespace IanNet.IanNet.Layers
             //activationKernel(nodes.Length, nodesBuffer);
         }
 
-        public override void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
-        {
-            // run the kernels
-            //forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
-            //activationKernel(nodes.Length, nodesBuffer);
-        }
+        //public override void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
+        //{
+        //    // run the kernels
+        //    //forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
+        //    //activationKernel(nodes.Length, nodesBuffer);
+        //}
 
         public override void PassBackError()
         {
@@ -211,8 +211,9 @@ namespace IanNet.IanNet.Layers
         {
             return new List<KeyValuePair<string, string>>
             {
-                new KeyValuePair<string, string>("InputWidth", InputShape.Width.ToString()),
-                new KeyValuePair<string, string>("InputHeight", InputShape.Height.ToString()),
+                // this is the input to the NEXT layer
+                new KeyValuePair<string, string>("InputWidth", NodeShape.Width.ToString()),
+                new KeyValuePair<string, string>("InputHeight", NodeShape.Height.ToString()),
             };
         }
 

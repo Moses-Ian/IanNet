@@ -38,14 +38,15 @@ namespace IanNet.IanNet.Layers
         public float[,] weightsTransposed;
         public float[] errors;
 
-        public Layer2D(Shape2D NodeShape, IOptimizer2D optimizer = null)
+        public Layer2D(Shape2D NodeShape = null, IOptimizer2D optimizer = null)
         {
-            this.NodeShape = NodeShape;
+            this.NodeShape = NodeShape ?? new Shape2D(0, 0);
 
             // in case the dev wants to use the default
-            this.optimizer = optimizer;// ?? new StochasticGradientDescent1D(0.1f);
+            this.optimizer = optimizer ?? new StochasticGradientDescent2D(0.1f);
         }
 
+        /// <param name="inputsBuffer">This should only be null if the layer is an input layer</param>
         public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
         {
             var InputsBuffer = inputsBuffer as MemoryBuffer2D<float, Stride2D.DenseX>;
@@ -107,12 +108,12 @@ namespace IanNet.IanNet.Layers
             //activationKernel(nodes.Length, nodesBuffer);
         }
 
-        public virtual void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
-        {
-            // run the kernels
-            //forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
-            //activationKernel(nodes.Length, nodesBuffer);
-        }
+        //public virtual void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
+        //{
+        //    // run the kernels
+        //    //forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
+        //    //activationKernel(nodes.Length, nodesBuffer);
+        //}
 
         public override void PassBackError()
         {

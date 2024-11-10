@@ -25,11 +25,7 @@ namespace IanNet.IanNet.Layers
         // buffer for holding transient data
         protected MemoryBuffer1D<float, Stride1D.Dense> transientBuffer;
 
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="inputsBuffer">This should only be null if this layer is an input layer</param>
-        /// <param name="downstreamErrorsBuffer">This should only be null if this layer is an output layer</param>
         public virtual void InitBuffers(MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null)
         {
             // allocate memory on the gpu

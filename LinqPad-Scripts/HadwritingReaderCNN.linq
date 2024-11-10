@@ -39,10 +39,10 @@ void Main()
 
 	//ShowTheFirstLetter();
 	var Net = MakeTheNetwork();
-	Console.WriteLine(Net.ToString());
-
+	
 	Net.Compile(netOptions);
 	Console.WriteLine("Compiled successfully");
+	Console.WriteLine(Net.ToString());
 	
 	string firstLine = File.ReadLines(trainingFilepath).First();
 	var values = firstLine.Split(',');
@@ -144,6 +144,8 @@ public Net MakeTheNetwork()
 	//convLayer.SetInitializer(new RawData2D(new float[,] { { 1, 2 } , { -1, 0 } }, new float[,] { { 1, 2 } , { -1, 0 } }));
 	convLayer.SetInitializer(new HeUniform2D(9));
 	convLayer.SetActivation(new ReLU2D());
+	
+	var poolingLayer = new MaxPooling(new Shape2D(2, 2));
 	//hiddenLayer1.SetOptimizer(new Adam(learningRate));
 	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
@@ -160,6 +162,7 @@ public Net MakeTheNetwork()
 	
 	net.AddLayer(inputLayer);
 	net.AddLayer(convLayer);
+	net.AddLayer(poolingLayer);
 	//net.AddLayer(hiddenLayer2);
 	//net.AddLayer(outputLayer);
 	
