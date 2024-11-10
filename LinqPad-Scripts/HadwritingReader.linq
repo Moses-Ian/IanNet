@@ -26,8 +26,8 @@ void Main()
 {
 	//int epochs=10;
 	//int take=int.MaxValue;
-	int epochs = 10;
-	int take = 1;
+	int epochs = 100;
+	int take = 10;
 	bool oldWay = false;
 	int historyStepSize = 1;
 	var netOptions = new Dictionary<string, string>()

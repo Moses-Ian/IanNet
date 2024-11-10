@@ -43,13 +43,13 @@ void Main()
 	Net.Compile(netOptions);
 	Console.WriteLine("Compiled successfully");
 	
-	//string firstLine = File.ReadLines(trainingFilepath).First();
-	//var values = firstLine.Split(',');
-	//int label = int.Parse(values[0]);
-	//byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
-	//Image image = new Image(pixels);
-	byte[] pixels = new byte[] { 1, 6, 2, 5, 3, 1, 7, 0, 4 };
+	string firstLine = File.ReadLines(trainingFilepath).First();
+	var values = firstLine.Split(',');
+	int label = int.Parse(values[0]);
+	byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
 	Image image = new Image(pixels);
+	//byte[] pixels = new byte[] { 1, 6, 2, 5, 3, 1, 7, 0, 4 };
+	//Image image = new Image(pixels);
 	
 	var output = Net.Forward(image);
 	Console.WriteLine("Inputs");
@@ -136,12 +136,13 @@ public Net MakeTheNetwork()
 	var net = new Net();
 	var learningRate = 0.1f;
 	
-	var inputLayer = new Input2DLayer<Image>(new Shape2D(3, 3));
+	var inputLayer = new Input2DLayer<Image>(new Shape2D(28, 28));
 	inputLayer.SetPreprocess(Preprocess);
 	
-	var convLayer = new Conv2DLayer(1, new Shape2D(2, 2));
+	var convLayer = new Conv2DLayer(1, new Shape2D(3, 3));
 	//convLayer.SetInitializer(new RawData2D(new float[,] { { 1, 2 } , { -1, 0 } }, new float[,] { { 1, 2 } , { -1, 0 } }));
-	convLayer.SetInitializer(new HeUniform2D(4));
+	convLayer.SetInitializer(new HeUniform2D(9));
+	convLayer.SetActivation(new ReLU());
 	//hiddenLayer1.SetOptimizer(new Adam(learningRate));
 	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
@@ -172,7 +173,7 @@ static float[,] Preprocess(Image image)
 	for (int i=0; i<result.GetLength(0); i++)
 		for (int j=0; j<result.GetLength(1); j++)
 			result[i,j] = image.pixels[i,j];// / 255.0f;
-	
+
 	return result;
 }
 
@@ -218,10 +219,10 @@ public struct Image
 	
 	public Image(byte[] p)
 	{
-		pixels = new byte[3, 3];
-		for (int i=0; i<3; i++)
-			for (int j=0; j<3; j++)
-				pixels[i, j] = p[i*3 + j];
+		pixels = new byte[28, 28];
+		for (int i=0; i<pixels.GetLength(0); i++)
+			for (int j=0; j<pixels.GetLength(1); j++)
+				pixels[i, j] = p[i*pixels.GetLength(1) + j];
 	}
 }
 
