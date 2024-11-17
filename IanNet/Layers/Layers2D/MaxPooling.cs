@@ -65,5 +65,10 @@ namespace IanNet.IanNet.Layers
         {
             poolKernel(GetIndex2D(nodes), FilterShape.Width, FilterShape.Height, inputsBuffer, nodesBuffer);
         }
+
+        public override string ToString()
+        {
+            return $"Max Pooling Layer with a ({FilterShape.Width}, {FilterShape.Height}) filter. ";
+        }
     }
 }
