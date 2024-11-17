@@ -12,6 +12,20 @@ namespace IanNet.IanNet.Kernel
 {
     public abstract class Kernels
     {
+        public static void flatten2Dto1D(Index1D index, ArrayView2D<float, Stride2D.DenseX> input, ArrayView1D<float, Stride1D.Dense> output)            // 1D output array
+        {
+            // Compute the corresponding 2D row and column from the 1D index
+            int row = index / (int) input.Extent.X;
+            int col = index % (int) input.Extent.X;
+
+            // Ensure the index is within bounds
+            if (row < input.Extent.Y && col < input.Extent.X)
+            {
+                // Flatten the 2D element into the 1D output
+                output[index] = input[row, col];
+            }
+        }
+
         // There's supposed to be a better way to do this, but ChatGPT doesn't know what it is and I don't feel like figuring it out
         public static void fillWithZeros(Index1D index, ArrayView1D<float, Stride1D.Dense> vector)
         {

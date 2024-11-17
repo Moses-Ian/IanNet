@@ -207,11 +207,14 @@ namespace IanNet.IanNet.Layers
             return errors;
         }
 
+        /// <summary>
+        /// Returns the options object for the NEXT layer to use
+        /// </summary>
+        /// <returns>The input to the NEXT layer</returns>
         public override List<KeyValuePair<string, string>> GetOptionsInfo()
         {
             return new List<KeyValuePair<string, string>>
             {
-                // this is the input to the NEXT layer
                 new KeyValuePair<string, string>("InputWidth", NodeShape.Width.ToString()),
                 new KeyValuePair<string, string>("InputHeight", NodeShape.Height.ToString()),
             };

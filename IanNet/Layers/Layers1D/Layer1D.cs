@@ -39,7 +39,7 @@ namespace IanNet.IanNet.Layers
         public float[,] weightsTransposed;
         public float[] errors;
 
-        public Layer1D(int NumberOfNodes, IOptimizer1D optimizer = null)
+        public Layer1D(int NumberOfNodes = 0, IOptimizer1D optimizer = null)
         {
             this.NumberOfNodes = NumberOfNodes;
 
@@ -164,7 +164,7 @@ namespace IanNet.IanNet.Layers
             return biases;
         }
 
-        public override float[] GetInputs()
+        public override Array GetInputs()
         {
             if (inputsBuffer == null)
                 return null;

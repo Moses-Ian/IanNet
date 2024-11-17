@@ -45,7 +45,7 @@ namespace IanNet.IanNet.Layers
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>> multiplyKernel;
         
-        public void CompileKernels()
+        public virtual void CompileKernels()
         {
             // compile our kernels
             fillRandom1DKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView1D<float, Stride1D.Dense>, long>(Kernels.fillRandom1D);

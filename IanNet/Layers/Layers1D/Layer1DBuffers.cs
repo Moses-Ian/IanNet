@@ -29,7 +29,6 @@ namespace IanNet.IanNet.Layers
         /// 
         /// </summary>
         /// <param name="inputsBuffer">This should only be null if this layer is an input layer</param>
-        /// <param name="downstreamErrorsBuffer">This should only be null if this layer is an output layer</param>
         public virtual void InitBuffers(MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null)
         {
             // allocate memory on the gpu
@@ -93,6 +92,14 @@ namespace IanNet.IanNet.Layers
 
         #endregion
 
+        #region Generics
+
+        /// <summary>
+        /// This is a generic version for you to override if you don't want a MemoryBuffer1D
+        /// </summary>
+        public virtual void InitBuffers(MemoryBuffer inputsBuffer) { }
+
+        #endregion
 
     }
 }
