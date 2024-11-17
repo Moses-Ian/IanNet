@@ -22,7 +22,7 @@ namespace IanNet.IanNet.Layers
         Random random = new Random();
         public float gradientClip = 0.1f;
         public IOptimizer2D optimizer;
-        public IInitializer initializer;
+        public IInitializer2D initializer;
         public IActivation2D IActivation = null;
 
         // core data
@@ -136,14 +136,14 @@ namespace IanNet.IanNet.Layers
             //optimizer.SetSize(InputShape, NumberOfNodes);
         }
 
-        public void SetInitializer(IInitializer initializer)
+        public void SetInitializer(IInitializer2D initializer)
         {
             this.initializer = initializer;
         }
 
         public void SetActivation(IActivation2D activation)
         {
-            this.IActivation = IActivation;
+            IActivation = activation;
             optimizer?.SetActivation(activation);
         }
 

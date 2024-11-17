@@ -8,6 +8,7 @@ using ILGPU;
 using ILGPU.Runtime.Cuda;
 using IanNet.IanNet.Optimizers;
 using IanNet.IanNet.Activation;
+using IanNet.IanNet.Initializers;
 
 namespace IanNet.IanNet.Layers
 {
@@ -23,6 +24,7 @@ namespace IanNet.IanNet.Layers
         Random random = new Random();
         public float gradientClip = 0.1f;
         IOptimizer1D optimizer;
+        public IInitializer1D initializer;
         public IActivation1D IActivation = new Sigmoid();
 
 
@@ -138,10 +140,15 @@ namespace IanNet.IanNet.Layers
             optimizer.SetActivation(IActivation);
         }
 
-        public void SetActivation(IActivation1D IActivation)
+        public void SetInitializer(IInitializer1D initializer)
         {
-            this.IActivation = IActivation;
-            optimizer.SetActivation(IActivation);
+            this.initializer = initializer;
+        }
+
+        public void SetActivation(IActivation1D activation)
+        {
+            IActivation = activation;
+            optimizer.SetActivation(activation);
         }
 
         #region Get Data

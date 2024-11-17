@@ -8,10 +8,9 @@ using System.Threading.Tasks;
 
 namespace IanNet.IanNet.Initializers
 {
-    public interface IInitializer
+    public interface IInitializer1D
     {
         public void Compile(Accelerator device);
-        public void InitializeNetwork(MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer, MemoryBuffer2D<float, Stride2D.DenseX> biasesBuffer);
-
+        public void InitializeNetwork(MemoryBuffer1D<float, Stride1D.Dense> weightsBuffer, MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer);
     }
 }

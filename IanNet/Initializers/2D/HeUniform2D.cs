@@ -14,7 +14,7 @@ namespace IanNet.IanNet.Initializers
     /// Each weight is calculated as a random number with a Gaussian probability distribution (G) with a mean of 0.0 and a standard deviation of sqrt(2/n), where n is the number of inputs to the node.
     /// weight = G(0.0, sqrt(2/n))
     /// </summary>
-    public class HeUniform2D : IInitializer
+    public class HeUniform2D : IInitializer2D
     {
         public int n;
         public Action<Index2D, ArrayView2D<float, Stride2D.DenseX>, int, int> guassian2DKernel;

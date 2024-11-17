@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace IanNet.IanNet.Initializers
 {
-    public class RawData2D : IInitializer
+    public class RawData2D : IInitializer2D
     {
         public float[,] initialWeights;
         public float[,] initialBiases;
