@@ -1,4 +1,5 @@
-﻿using ILGPU.Runtime;
+﻿using ILGPU;
+using ILGPU.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,20 +38,45 @@ namespace IanNet.IanNet.Layers
             _BackPostprocess = processing.BackProcess;
         }
 
-        public override void Forward()
+        public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
         {
-            // run the kernels
-            forwardKernel(nodes.Length, inputsBuffer, weightsBuffer, biasesBuffer, nodesBuffer);
-            activationKernel(nodes.Length, nodesBuffer);
+            var InputsBuffer = inputsBuffer as MemoryBuffer1D<float, Stride1D.Dense>;
+
+            InitGpu(device, Options);
+
+            InitCpu();
+
+            InitBuffers(InputsBuffer);
         }
 
+        public override void InitCpu() 
+        {
+            inputs = new float[NumberOfInputs];
+        }
+
+        public override void InitBuffers(MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null)
+        {
+            // allocate memory on the gpu
+            if (inputsBuffer == null)
+                this.inputsBuffer = device.Allocate1D<float>(inputs.Length);
+            else
+                this.inputsBuffer = inputsBuffer;
+        }
+
+        public override void Forward() { }
+
+        /// <summary>
+        /// Takes the inputs to this layer, processes them, and returns the result.
+        /// </summary>
+        /// <returns>The processed data</returns>
+        /// <exception cref="Exception">Output Layer's inputs buffer is null</exception>
         public override object GetOutputs()
         {
-            if (nodesBuffer == null)
-                throw new Exception("Output nodes buffer is null");
+            if (inputsBuffer == null)
+                throw new Exception("Output Layer's inputs buffer is null");
 
-            nodes = nodesBuffer.GetAsArray1D();
-            return Postprocess(nodes);
+            inputs = inputsBuffer.GetAsArray1D();
+            return Postprocess(inputs);
         }
 
         public override void LoadTarget(object target)
@@ -61,7 +87,7 @@ namespace IanNet.IanNet.Layers
 
         public override void CalculateError()
         {
-            getErrorKernel(NumberOfNodes, nodesBuffer, targetsBuffer, errorsBuffer);
+            getErrorKernel(NumberOfNodes, inputsBuffer, targetsBuffer, errorsBuffer);
         }
 
         public override float[] BackPostprocess(object values)

@@ -25,7 +25,7 @@ namespace IanNet.IanNet.Layers
         public float gradientClip = 0.1f;
         IOptimizer1D optimizer;
         public IInitializer1D initializer;
-        public IActivation1D IActivation = new Sigmoid();
+        public IActivation1D IActivation = new Sigmoid1D();
 
 
         // core data

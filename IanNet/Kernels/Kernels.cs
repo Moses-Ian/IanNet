@@ -12,6 +12,10 @@ namespace IanNet.IanNet.Kernel
 {
     public abstract class Kernels
     {
+        public static void none(Index1D index, ArrayView1D<float, Stride1D.Dense> result) { }
+
+        public static void none(Index1D index, ArrayView1D<float, Stride1D.Dense> a, ArrayView1D<float, Stride1D.Dense> b) { }
+
         public static void flatten2Dto1D(Index1D index, ArrayView2D<float, Stride2D.DenseX> input, ArrayView1D<float, Stride1D.Dense> output)            // 1D output array
         {
             // Compute the corresponding 2D row and column from the 1D index

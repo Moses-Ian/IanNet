@@ -25,9 +25,6 @@ namespace IanNet.IanNet.Layers
         // buffer for holding transient data
         protected MemoryBuffer1D<float, Stride1D.Dense> transientBuffer;
 
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="inputsBuffer">This should only be null if this layer is an input layer</param>
         public virtual void InitBuffers(MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null)
         {
