@@ -115,7 +115,7 @@ namespace IanNet.IanNet.Optimizers
                         same = false;
                         break;
                     }
-            Console.WriteLine($"The weights are {(same ? "the same" : "different")}");
+            //Console.WriteLine($"The weights are {(same ? "the same" : "different")}");
 
 
             #endregion

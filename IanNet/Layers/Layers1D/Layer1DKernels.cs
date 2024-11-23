@@ -31,11 +31,6 @@ namespace IanNet.IanNet.Layers
             ArrayView1D<float, Stride1D.Dense>> forwardBatchKernel;
         public Action<Index1D, ArrayView1D<float, Stride1D.Dense>> activationKernel;
         public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>> getErrorKernel;
-        public Action<
             Index2D,
             ArrayView2D<float, Stride2D.DenseX>,
             ArrayView2D<float, Stride2D.DenseX>> transposeKernel;
@@ -59,11 +54,7 @@ namespace IanNet.IanNet.Layers
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>>(Kernels.forwardBatch);
             activationKernel = device.LoadAutoGroupedStreamKernel(IActivation.Activate);
-            getErrorKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.getError);
+            
             transposeKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
                 ArrayView2D<float, Stride2D.DenseX>,

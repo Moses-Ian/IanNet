@@ -189,7 +189,7 @@ namespace IanNet.IanNet.Layers
             return nodes;
         }
 
-        public virtual float[] GetNodes()
+        public override float[] GetNodes()
         {
             if (nodesBuffer == null)
                 return null;
@@ -235,7 +235,7 @@ namespace IanNet.IanNet.Layers
         }
 
         /// <summary>
-        /// This should only be called by layers that extent OutputLayer
+        /// This should only be called by layers that extend OutputLayer
         /// </summary>
         public override void CalculateError()
         {

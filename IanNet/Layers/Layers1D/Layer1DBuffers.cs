@@ -17,7 +17,6 @@ namespace IanNet.IanNet.Layers
         protected MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense>  errorsBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> targetsBuffer;
         //protected MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> upstreamErrorsBuffer;
 
@@ -43,7 +42,6 @@ namespace IanNet.IanNet.Layers
             biasesBuffer = device.Allocate1D<float>(biases.Length);
             nodesBuffer = device.Allocate1D<float>(nodes.Length);
             errorsBuffer = transientBuffer;
-            targetsBuffer = transientBuffer;
         }
 
         public Index2D GetIndex2D(float[,] matrix)
@@ -66,11 +64,6 @@ namespace IanNet.IanNet.Layers
         public override MemoryBuffer GetErrorsBuffer()
         {
             return errorsBuffer;
-        }
-
-        public virtual MemoryBuffer1D<float, Stride1D.Dense> GetTargetsBuffer()
-        {
-            return targetsBuffer;
         }
 
         #endregion

@@ -185,7 +185,7 @@ namespace IanNet.IanNet.Layers
             return nodes;
         }
 
-        public virtual float[,] GetNodes()
+        public override float[,] GetNodes()
         {
             if (nodesBuffer == null)
                 return null;

@@ -90,7 +90,7 @@ namespace IanNet.IanNet.Layers
 
         public override string ToString()
         {
-            return $"Input 2D layer with ( {NodeShape.Width}, {NodeShape.Height} ) nodes. ";
+            return $"Input 2D layer with input type {typeof(T).Name} and ( {NodeShape.Width}, {NodeShape.Height} ) nodes. ";
         }
     }
 }

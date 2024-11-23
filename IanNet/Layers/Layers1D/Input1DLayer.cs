@@ -91,7 +91,7 @@ namespace IanNet.IanNet.Layers
 
         public override string ToString()
         {
-            return $"Input layer with {NumberOfInputs} nodes. ";
+            return $"Input layer with input type {typeof(T).Name} and {NumberOfInputs} nodes. ";
         }
     }
 }

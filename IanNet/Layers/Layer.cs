@@ -28,5 +28,6 @@ namespace IanNet.IanNet.Layers
         public abstract float[] GetErrors();
         public abstract Array GetInputs();
         public abstract Array GetWeights();
+        public abstract Array GetNodes();
     }
 }
