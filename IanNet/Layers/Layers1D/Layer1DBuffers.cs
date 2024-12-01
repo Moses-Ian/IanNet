@@ -77,6 +77,11 @@ namespace IanNet.IanNet.Layers
 
         public override void SetUpstreamErrorsBuffer(MemoryBuffer upstreamErrorsBuffer)
         {
+            Console.WriteLine($"{this.Name} set upstreamerrorsbuffer");
+            if (upstreamErrorsBuffer == null)
+            {
+                Console.WriteLine("the buffer is null");
+            }
             this.upstreamErrorsBuffer = upstreamErrorsBuffer as MemoryBuffer1D<float, Stride1D.Dense>;
         }
 

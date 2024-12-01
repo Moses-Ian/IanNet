@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IanNet.IanNet.DataProcessing;
 
 namespace IanNet.IanNet.Layers
 {
@@ -13,10 +14,24 @@ namespace IanNet.IanNet.Layers
         public delegate float[] PreprocessDelegate(T input);
         private PreprocessDelegate _Preprocess;
 
+        // metadata;
+        public new string Name = "Input1DLayer";
+
         public Input1DLayer(int NumberOfInputs)
             : base(NumberOfInputs)
         {
             this.NumberOfInputs = NumberOfInputs;
+            SetProcessing(new FloatArrayPreprocessing() as IPreprocessing<T>);
+        }
+
+        public void SetPreprocess(PreprocessDelegate preprocess)
+        {
+            _Preprocess = preprocess;
+        }
+
+        public void SetProcessing(IPreprocessing<T> preprocessing)
+        {
+            _Preprocess = preprocessing.Preprocess;
         }
 
         public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -47,6 +62,8 @@ namespace IanNet.IanNet.Layers
                 this.inputsBuffer = device.Allocate1D<float>(inputs.Length);
             else
                 this.inputsBuffer = inputsBuffer;
+
+            errorsBuffer = device.Allocate1D<float>(this.inputsBuffer.Extent);
         }
 
         public override void InitNetwork()
@@ -70,10 +87,9 @@ namespace IanNet.IanNet.Layers
 
         public override void Forward() { }
 
-        public void SetPreprocess(PreprocessDelegate preprocess)
-        {
-            _Preprocess = preprocess;
-        }
+        public override void PassBackError() { }
+
+        public override void BackPropogate() { }
 
         public override object GetOutputs()
         {

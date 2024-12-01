@@ -33,6 +33,9 @@ namespace IanNet.IanNet
         public History history;
         public EarlyStopping earlyStopping;
 
+        // net things
+        public bool Compiled = false;
+
         public Net(float learningRate = 0.1f)
         {
             this.learningRate = learningRate;
@@ -42,11 +45,17 @@ namespace IanNet.IanNet
 
         public void AddLayer(Layer layer)
         {
+            if (Compiled)
+                throw new Exception("This network has already been compiled");
+
             Layers.Add(layer);
         }
 
         public void Compile(Dictionary<string, string> Options = null)
         {
+            if (Compiled)
+                throw new Exception("This network has already been compiled");
+
             // GPU
             if (Options != null && Options.ContainsKey("ForceCPU"))
                 InitGpu(bool.Parse(Options["ForceCPU"]));
@@ -72,7 +81,7 @@ namespace IanNet.IanNet
             //    Layers[i].SetDownstreamErrorsBuffer(Layers[i+1].GetErrorsBuffer());
             //}
 
-            for (int i = 2; i < Layers.Count; i++)
+            for (int i = 1; i < Layers.Count; i++)
             {
                 Layers[i].SetUpstreamErrorsBuffer(Layers[i-1].GetErrorsBuffer());
             }
@@ -82,6 +91,8 @@ namespace IanNet.IanNet
                 Index1D,
                 ArrayView1D<float, Stride1D.General>,
                 ArrayView1D<float, Stride1D.Dense>>(copy);
+
+            Compiled = true;
         }
 
         public void InitGpu(bool forceCPU = false)
@@ -94,6 +105,9 @@ namespace IanNet.IanNet
 
         public object Forward(object inputs, bool returnResult = true)
         {
+            if (!Compiled)
+                throw new Exception("This network has not been compiled yet");
+
             Layers.First().Load(inputs);
             Layers.Skip(1).ToList().ForEach(l => l.Forward());
 
@@ -112,7 +126,7 @@ namespace IanNet.IanNet
             outputLayer.LoadTarget(target);
             outputLayer.CalculateError();
 
-            Layers.AsEnumerable().Skip(1).Reverse().ToList().ForEach(layer =>
+            Layers.AsEnumerable().Reverse().ToList().ForEach(layer =>
             {
                 layer.PassBackError();
                 layer.BackPropogate();
@@ -177,6 +191,7 @@ namespace IanNet.IanNet
                     var epochStats = new Epoch() { Number = currentEpoch };
                     if (options.TrackAccuracy) epochStats.Accuracy = GetAccuracy(batch);
                     if (options.TrackLoss) epochStats.Loss = GetLoss(batch);
+                    if (options.TrackCategoricalCrossEntropy) epochStats.CategoricalCrossEntropy = GetCategoricalCrossEntropy(batch);
                     history.Add(epochStats);
 
                     // early stopping
@@ -236,6 +251,36 @@ namespace IanNet.IanNet
 
             // load it to the gpu
             targetBatch.CopyFromCPU(targets);
+        }
+
+        public void LoadTarget(object target)
+        {
+            Layers.Last().LoadTarget(target);
+        }
+
+        /// <summary>
+        /// Calculate the error based on the target.
+        /// </summary>
+        public void CalculateError()
+        {
+            Layers.Last().CalculateError();
+        }
+
+        /// <summary>
+        /// Calculate the error for each layer and fill the errorBuffers with the errors, but will NOT update the weights.
+        /// Call CalculateError() or load the errorBuffer before calling this.
+        /// </summary>
+        public void PassBackError()
+        {
+            Layers.AsEnumerable().Reverse().ToList().ForEach(layer => layer.PassBackError() );
+        }
+
+        /// <summary>
+        /// Update the weights for each layer with what is currently in each layer's errorBuffer.
+        /// </summary>
+        public void BackPropogate()
+        {
+            Layers.AsEnumerable().Reverse().ToList().ForEach(layer => layer.BackPropogate() );
         }
 
         public void SetEarlyStopping(EarlyStopping earlyStopping)
@@ -304,13 +349,54 @@ namespace IanNet.IanNet
                 object input = item.Item1;
                 object target = item.Item2;
 
-                object guess = Forward(input);
+                Forward(input, returnResult: false);
 
                 float[] values = Layers.Last().GetErrors();
 
                 foreach (var error in Layers.Last().GetErrors())
                     loss += Math.Abs(error);
             }
+
+            return loss;
+        }
+
+        /// <summary>
+        /// Gets the Categorical Cross-Entropy described by the function 
+        /// </summary>
+        /// <param name="batch"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public float GetCategoricalCrossEntropy(LabelledBatch<Tuple<object, object>> batch)
+        {
+            if (batch.Count() == 0)
+                throw new Exception("No items in batch");
+
+            // get the type of the output layer
+            Type type = Layers.Last().GetType();
+
+            var OutputLayer = Convert.ChangeType(Layers.Last(), type);
+            var backPostProcess = type.GetMethod("BackPostprocess");
+            if (backPostProcess == null)
+                throw new Exception("BackPostprocess was null on the last layer");
+            
+            float loss = 0f;
+            foreach (var item in batch)
+            {
+                object input = item.Item1;
+                object target = item.Item2;
+
+                Forward(input, returnResult: false);
+
+                float[] expected = backPostProcess.Invoke(OutputLayer, new object[] { target }) as float[];
+                float[] predicted = Layers.Last().GetNodes() as float[];
+
+                //Console.WriteLine("+++++");
+                //Console.WriteLine(expected);
+                //Console.WriteLine(predicted);
+
+            }
+
+
 
             return loss;
         }

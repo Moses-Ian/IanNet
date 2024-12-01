@@ -11,6 +11,7 @@ namespace IanNet.IanNet
         public int Epochs = 1;
         public bool TrackAccuracy = false;
         public bool TrackLoss = false;
+        public bool TrackCategoricalCrossEntropy = false;
         public int MiniBatchSize = 0;
         public int HistoryStepSize = 1;
     }

@@ -11,5 +11,6 @@ namespace IanNet.IanNet
         public int Number;
         public float Accuracy;
         public float Loss;
+        public float CategoricalCrossEntropy;
     }
 }

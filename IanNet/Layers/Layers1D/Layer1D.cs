@@ -17,6 +17,8 @@ namespace IanNet.IanNet.Layers
     /// </summary>
     public partial class Layer1D : Layer
     {
+        private readonly string defaultName = "Layer1D";
+
         // gpu things
         public Accelerator device;
 
@@ -26,7 +28,6 @@ namespace IanNet.IanNet.Layers
         IOptimizer1D optimizer;
         public IInitializer1D initializer;
         public IActivation1D IActivation = new Sigmoid1D();
-
 
         // core data
         public float[,] weights;
@@ -43,6 +44,7 @@ namespace IanNet.IanNet.Layers
 
         public Layer1D(int NumberOfNodes = 0, IOptimizer1D optimizer = null)
         {
+            Name = defaultName;
             this.NumberOfNodes = NumberOfNodes;
 
             // in case the dev wants to use the default
@@ -101,23 +103,14 @@ namespace IanNet.IanNet.Layers
         public override void Forward()
         {
             // run the kernels
-            //Console.WriteLine("inputs:");
-            //Console.WriteLine(GetInputs());
             forwardKernel(nodes.Length, inputsBuffer, weightsBuffer, biasesBuffer, nodesBuffer);
-            //Console.WriteLine("nodes:");
-            //Console.WriteLine(GetNodes());
-            activationKernel(nodes.Length, nodesBuffer);
-            //Console.WriteLine("nodes after activation:");
-            //Console.WriteLine(GetNodes());
-        }
-
-        public virtual void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
-        {
-            // run the kernels
-            forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
             activationKernel(nodes.Length, nodesBuffer);
         }
 
+        /// <summary>
+        /// Calculate what portion of the error this layer is responsible for, take it out, and give the rest to the previous layer.
+        /// The new errors are passed into upstreamErrorsBuffer.
+        /// </summary>
         public override void PassBackError()
         {
             // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
@@ -128,6 +121,9 @@ namespace IanNet.IanNet.Layers
             multiplyKernel(NumberOfInputs, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
         }
 
+        /// <summary>
+        /// Use the error calculated from PassBackError and stored in errorsBuffer to update the weights.
+        /// </summary>
         public override void BackPropogate()
         {
             optimizer.BackPropogate();
@@ -211,7 +207,7 @@ namespace IanNet.IanNet.Layers
         {
             return new List<KeyValuePair<string, string>>
             {
-                new KeyValuePair<string, string>("NumberOfInputs", NumberOfInputs.ToString())
+                new KeyValuePair<string, string>("NumberOfInputs", NumberOfNodes.ToString())
             };
         }
 

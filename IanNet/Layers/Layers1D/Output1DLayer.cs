@@ -5,13 +5,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using IanNet.IanNet.DataProcessing;
 using IanNet.IanNet.Kernel;
+using IanNet.IanNet.DataProcessing;
 
 namespace IanNet.IanNet.Layers
 {
     public class Output1DLayer<T> : Layer1D
     {
+        private readonly string defaultName = "Output1DLayer";
         public delegate T PostprocessDelegate(float[] values);
         public PostprocessDelegate Postprocess;
         public delegate float[] BackPostprocessDelegate(T values);
@@ -22,12 +23,13 @@ namespace IanNet.IanNet.Layers
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>> getErrorKernel;
+        public float[] targets;
 
 
         public Output1DLayer(int NumberOfOutputs)
             : base(NumberOfOutputs)
         {
-
+            Name = defaultName;
         }
 
         public void SetPostprocess(PostprocessDelegate postprocess)
@@ -149,8 +151,20 @@ namespace IanNet.IanNet.Layers
 
         public int GetTargetSize()
         {
-            float[] targets = _BackPostprocess(default);
-            return targets.Length;
+            return NumberOfNodes;
+
+            // This was working for a LONG time, so I don't want to cut it just yet
+            //float[] targets = _BackPostprocess(default);
+            //return targets.Length;
+        }
+
+        public float[] GetTarget()
+        {
+            if (targetsBuffer == null)
+                return null;
+
+            targets = targetsBuffer.GetAsArray1D();
+            return targets;
         }
     }
 }

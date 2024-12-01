@@ -29,5 +29,6 @@ namespace IanNet.IanNet.Layers
         public abstract Array GetInputs();
         public abstract Array GetWeights();
         public abstract Array GetNodes();
+        public string Name { get; set; }
     }
 }

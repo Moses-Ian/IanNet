@@ -53,12 +53,17 @@ void Main()
 	//Image image = new Image(pixels);
 	
 	var output = Net.Forward(image);
-	Console.WriteLine("Inputs");
-	Console.WriteLine(Net.Layers.Last().GetInputs());
-	Console.WriteLine("Weights");
-	Console.WriteLine(Net.Layers.Last().GetWeights());
-	Console.WriteLine("Outputs");
-	Console.WriteLine(output);
+	
+	var softmaxLayer = Net.Layers[6] as Softmax1D;
+	Console.WriteLine("Input to softmax:");
+	Console.WriteLine(softmaxLayer.GetInputs());
+	Console.WriteLine("Output of softmax:");
+	Console.WriteLine(softmaxLayer.GetOutputs());
+	
+	
+	
+	
+	
 	Console.WriteLine("done");
 	return;
 	
@@ -146,25 +151,35 @@ public Net MakeTheNetwork()
 	convLayer.SetActivation(new ReLU2D());
 	
 	var poolingLayer = new MaxPooling(new Shape2D(2, 2));
-	//hiddenLayer1.SetOptimizer(new Adam(learningRate));
-	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
+	var flattenLayer = new Flatten1D();
 	
-	//var hiddenLayer2 = new Layer(50);
+	var denseLayer1 = new Layer1D(100);
+	denseLayer1.SetActivation(new ReLU1D());
+	denseLayer1.SetInitializer(new HeUniform1D(100));
+	
+	var denseLayer2 = new Layer1D(10);
+	denseLayer2.SetActivation(new None1D());
+	denseLayer2.SetInitializer(new HeUniform1D(10));
+	
+	var softmaxLayer = new Softmax1D();
 	//hiddenLayer2.SetOptimizer(new Adam(learningRate));
 	
-	//int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
-	//var outputLayer = new OutputLayer<Label>(numberOfLabels);
+	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
+	var outputLayer = new Output1DLayer<Label>(numberOfLabels);
 	//outputLayer.SetPostprocess(Postprocess);			// if you want to define your own processing functions, this is how you do it
 	//outputLayer.SetBackPostprocess(BackPostprocess);
-	//outputLayer.SetProcessing(new EnumProcessing<Label>());
+	outputLayer.SetProcessing(new EnumProcessing<Label>());
 	//outputLayer.SetOptimizer(new Adam(learningRate));
 	//outputLayer.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	net.AddLayer(inputLayer);
 	net.AddLayer(convLayer);
 	net.AddLayer(poolingLayer);
-	//net.AddLayer(hiddenLayer2);
-	//net.AddLayer(outputLayer);
+	net.AddLayer(flattenLayer);
+	net.AddLayer(denseLayer1);
+	net.AddLayer(denseLayer2);
+	net.AddLayer(softmaxLayer);
+	net.AddLayer(outputLayer);
 	
 	
 	return net;

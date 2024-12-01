@@ -53,14 +53,14 @@ namespace IanNet.IanNet.Layers
         /// <param name="inputsBuffer"></param>
         /// <remarks>For now, this only accepts a MemoryBuffer2D. I will make it more generic later.</remarks>
         /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="ArgumentException">inputsBuffer must be of type MemoryBuffer1D<float, Stride1D.Dense></exception>
+        /// <exception cref="ArgumentException">inputsBuffer must be of type MemoryBuffer2D<float, Stride2D.DenseX></exception>
         public override void InitBuffers(MemoryBuffer inputsBuffer = null)
         {
             if (inputsBuffer == null)
                 throw new ArgumentNullException(nameof(inputsBuffer));
 
             if (inputsBuffer is not MemoryBuffer2D<float, Stride2D.DenseX>)
-                throw new ArgumentException("inputsBuffer must be of type MemoryBuffer1D<float, Stride1D.Dense>");
+                throw new ArgumentException("inputsBuffer must be of type MemoryBuffer2D<float, Stride2D.DenseX>");
 
             this.inputsBuffer = inputsBuffer as MemoryBuffer2D<float, Stride2D.DenseX>;
             nodesBuffer = device.Allocate1D(nodes);

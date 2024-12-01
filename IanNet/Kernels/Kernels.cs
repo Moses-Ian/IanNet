@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IanNet.IanNet.Constant;
 
 namespace IanNet.IanNet.Kernel
 {
@@ -130,6 +131,9 @@ namespace IanNet.IanNet.Kernel
             outMatrix[index.X, index.Y] = inMatrix[index.Y, index.X];
         }
 
+        /// <summary>
+        /// Multiply a 2D by a 1D to get a 1D
+        /// </summary>
         public static void multiply(Index1D index, ArrayView2D<float, Stride2D.DenseX> matrix, ArrayView1D<float, Stride1D.Dense> vector, ArrayView1D<float, Stride1D.Dense> result)
         {
             float sum = 0;
@@ -316,6 +320,72 @@ namespace IanNet.IanNet.Kernel
                     max = MathF.Max(max, inputs[row + i, col + j]);
 
             results[index] = max;
+        }
+
+        /// <summary>
+        /// Adds up all of the numbers in an array. 
+        /// The result is an array where each element k is the sum of all elements 0 through k.
+        /// If the array size exceeds the group size, this will return the wrong result.
+        /// </summary>
+        public static void total1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            result[index] = A[index];
+            Group.Barrier();
+
+            for (int offset = 1; offset <= A.Length; offset *= 2)
+            {
+                if (index - offset >= 0)
+                    result[index] += result[index - offset];
+
+                // wait until every thread gets through this iteration
+                Group.Barrier();
+            }
+        }
+
+        /// <summary>
+        /// Does the softmax of all of the numbers in an array.
+        /// Uses base 2 instead of base e.
+        /// If the array size exceeds the group size, this will return the wrong result.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="A"></param>
+        /// <param name="memory">An array for holding temporary values.</param>
+        /// <param name="result"></param>
+        public static void softmax1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> memory, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            // Step 1: Find 2^x for each element
+            result[index] = XMath.Exp2(A[index]);
+            memory[index] = result[index];
+            Group.Barrier();
+
+            // Step 2: Find the sum of all of the elements of 2^x
+            for (int offset = 1; offset <= A.Length; offset *= 2)
+            {
+                if (index - offset >= 0)
+                    memory[index] += memory[index - offset];
+
+                // wait until every thread gets through this iteration
+                Group.Barrier();
+            }
+            float sum = memory[memory.Length - 1];
+
+            // Step 3: Divide each 2^x by the sum
+            result[index] = result[index] / sum;
+            Group.Barrier();
+        }
+
+        /// <summary>
+        /// Calculates the derivative of the softmax of all of the numbers in an array.
+        /// Uses base 2 instead of base e.
+        /// If the array size exceeds the group size, this will return the wrong result.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="A">Outputs of the softmax function with base 2.</param>
+        /// <param name="result">The Jacobian, an (n, n) matrix</param>
+        public static void softmax1DPrime(Index2D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView2D<float, Stride2D.DenseX> result)
+        {
+            var del = index.X == index.Y ? 1f : 0f;
+            result[index] = Constants.ln2 * A[index.X] * (del - A[index.Y]);
         }
     }
 }

@@ -26,7 +26,7 @@ void Main()
 {
 	//int epochs=10;
 	//int take=int.MaxValue;
-	int epochs = 100;
+	int epochs = 1;
 	int take = 10;
 	bool oldWay = false;
 	int historyStepSize = 1;
@@ -63,6 +63,7 @@ void Main()
 		Epochs = epochs,
 		TrackAccuracy = true,
 		TrackLoss = true,
+		TrackCategoricalCrossEntropy = true,
 		HistoryStepSize = historyStepSize
 	};
 	
@@ -128,24 +129,25 @@ public Net MakeTheNetwork()
 	
 	var hiddenLayer1 = new Layer1D(100);
 	hiddenLayer1.SetOptimizer(new Adam(learningRate));
-	hiddenLayer1.SetActivation(new ReLU());
+	hiddenLayer1.SetActivation(new ReLU1D());
 	//hiddenLayer1.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
-	//var hiddenLayer2 = new Layer(50);
-	//hiddenLayer2.SetOptimizer(new Adam(learningRate));
+	var hiddenLayer2 = new Layer1D(10);
+	hiddenLayer2.SetOptimizer(new Adam(learningRate));
+	hiddenLayer2.SetActivation(new None1D());
 	
 	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
 	var outputLayer = new Output1DLayer<Label>(numberOfLabels);
 	//outputLayer.SetPostprocess(Postprocess);			// if you want to define your own processing functions, this is how you do it
 	//outputLayer.SetBackPostprocess(BackPostprocess);
 	outputLayer.SetProcessing(new EnumProcessing<Label>());
-	outputLayer.SetOptimizer(new Adam(learningRate));
+	//outputLayer.SetOptimizer(new Adam(learningRate));
 	//outputLayer.SetActivation(new ReLU());
 	//outputLayer.SetOptimizer(new StochasticGradientDescent(learningRate));
 	
 	net.AddLayer(inputLayer);
 	net.AddLayer(hiddenLayer1);
-	//net.AddLayer(hiddenLayer2);
+	net.AddLayer(hiddenLayer2);
 	net.AddLayer(outputLayer);
 	
 	

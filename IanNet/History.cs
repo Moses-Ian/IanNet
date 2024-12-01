@@ -98,6 +98,50 @@ namespace IanNet.IanNet
             return graph;
         }
 
+        public byte[,] ToCategoricalCrossEntropyGraph(int width = 100, int height = 50)
+        {
+            byte[,] graph = new byte[height, width];    // new byte[rows, cols]
+
+            if (Epochs.Count == 0)
+                return graph;
+
+            int maxEpoch = Epochs[Epochs.Count - 1].Number;
+            float maxCCE = 0f;
+            foreach (var epoch in Epochs)
+                if (epoch.CategoricalCrossEntropy > maxCCE)
+                    maxCCE = epoch.CategoricalCrossEntropy;
+            maxCCE *= 1.2f;    // add some buffer to the top
+
+            // drawing the vertical lines
+            int step = Epochs.Count / 10 >= 1 ? Epochs.Count / 10 : 1;
+            for (int i = 1; i < Epochs.Count; i += step)
+            {
+                int x1 = (int)((Epochs[i - 1].Number / (float)maxEpoch) * (width - 1));
+                int y1 = height - 1;
+                int y2 = 0;
+
+                DrawLine(graph, x1, y1, x1, y2, 51);
+            }
+
+
+            for (int i = 1; i < Epochs.Count; i++)
+            {
+                if (float.IsNaN(Epochs[i].CategoricalCrossEntropy))
+                    continue;
+
+                int x1 = (int)((Epochs[i - 1].Number / (float)maxEpoch) * (width - 1));
+                int y1 = height - 1 - (int)((Epochs[i - 1].CategoricalCrossEntropy / maxCCE) * (height - 1));
+                int x2 = (int)((Epochs[i].Number / (float)maxEpoch) * (width - 1));
+                int y2 = height - 1 - (int)((Epochs[i].CategoricalCrossEntropy / maxCCE) * (height - 1));
+                //Console.WriteLine($"height: {height} i: {i} CategoricalCrossEntropy: {Epochs[i].CategoricalCrossEntropy} maxCCE: {maxCCE}");
+
+                DrawLine(graph, x1, y1, x2, y2, 255);
+            }
+
+            return graph;
+        }
+
+
         private void DrawLine(byte[,] graph, int x1, int y1, int x2, int y2, byte value)
         {
             //Console.WriteLine($"Line ( {x1}, {y1} ) -> ( {x2}, {y2} )");
