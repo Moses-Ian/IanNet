@@ -12,12 +12,18 @@ namespace IanNet.IanNet.Layers
 {
     public class Flatten1D : Layer1D
     {
+        // metadata
+        private readonly string defaultName = "Flatten1D";
+
         public Shape2D InputShape;
         public new float[,] inputs;
         protected new MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer;
         public Action<Index1D, ArrayView2D<float, Stride2D.DenseX>, ArrayView1D<float, Stride1D.Dense>> flattenKernel;
 
-        public Flatten1D() : base() { }
+        public Flatten1D() : base() 
+        {
+            Name = defaultName;
+        }
 
         public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
         {
@@ -75,6 +81,22 @@ namespace IanNet.IanNet.Layers
         {
             flattenKernel(NumberOfNodes, inputsBuffer, nodesBuffer);
         }
+
+        /// <summary>
+        /// Not fully defined because I haven't gotten into the errors for CNNs yet
+        /// </summary>
+        public override void PassBackError()
+        {
+            // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
+            if (upstreamErrorsBuffer == null)
+                return;
+
+            //transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
+            //multiplyKernel(NumberOfInputs, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
+        }
+
+        // Flatten does not have errors that need to be corrected
+        public override void BackPropogate() { }
 
         public override Array GetInputs()
         {

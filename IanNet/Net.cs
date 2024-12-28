@@ -12,6 +12,7 @@ using ILGPU.Runtime;
 using ILGPU;
 using ILGPU.Runtime.OpenCL;
 using IanNet.IanNet.Batch;
+using IanNet.IanNet.Measurement;
 
 namespace IanNet.IanNet
 {
@@ -148,38 +149,6 @@ namespace IanNet.IanNet
             
             for (int epoch = 0; epoch < options.Epochs; epoch++)
             {
-                //Console.WriteLine("Epoch " + epoch);
-                /*  // Commented because this SHOULD reduce transfer time, but I clearly am misunderstanding something
-                IEnumerable<float[]> items = batch.Select(item => inputLayer.Preprocess(item.Item1));
-                IEnumerable<float[]> targets = batch.Select(item => outputLayer.BackPostprocess(item.Item2));
-                var inputWidth = items.First().Length;
-                var outputWidth = targets.First().Length;
-
-                LoadInputs(items);
-                LoadTargets(targets);
-
-                // now train on one batch at a time
-                for (int i = 0; i < numberOfItems; i++)
-                {
-                    Layers.Skip(1).Take(1).First().Forward(inputBatch, i);
-
-                    // feed forward
-                    Layers.Skip(2).ToList().ForEach(l => l.Forward());
-
-                    var row = targetBatch.View.To1DView().SubView(i, outputWidth);
-
-                    // copy from the target batch to the target
-                    copyKernel(outputLayer.nodes.Length, row, Layers.Last().GetTargetsBuffer());
-
-                    // backpropogate
-                    Layers.AsEnumerable().Skip(1).Reverse().ToList().ForEach(layer =>
-                    {
-                        layer.CalculateError();
-                        layer.BackPropogate();
-                    });
-                }
-                */
-
                 foreach (var tuple in batch)
                 {
                     Train(tuple.Item1, tuple.Item2);
@@ -189,9 +158,9 @@ namespace IanNet.IanNet
                 if (options.HistoryStepSize > 0 && currentEpoch % options.HistoryStepSize == 0)
                 {
                     var epochStats = new Epoch() { Number = currentEpoch };
-                    if (options.TrackAccuracy) epochStats.Accuracy = GetAccuracy(batch);
-                    if (options.TrackLoss) epochStats.Loss = GetLoss(batch);
-                    if (options.TrackCategoricalCrossEntropy) epochStats.CategoricalCrossEntropy = GetCategoricalCrossEntropy(batch);
+                    if (options.TrackAccuracy) epochStats.Accuracy = Measurements.GetAccuracy(this, batch);
+                    if (options.TrackLoss) epochStats.Loss = Measurements.GetLoss(this, batch);
+                    if (options.TrackCategoricalCrossEntropy) epochStats.CategoricalCrossEntropy = Measurements.GetCategoricalCrossEntropy(this, batch);
                     history.Add(epochStats);
 
                     // early stopping
@@ -309,96 +278,6 @@ namespace IanNet.IanNet
         private static void copy(Index1D index, ArrayView1D<float, Stride1D.General> source, ArrayView1D<float, Stride1D.Dense> destination)
         {
             destination[index] = source[index];
-        }
-
-        #endregion
-
-        #region History
-
-        /// <summary>
-        /// Assumptions: The label should override Equals().
-        /// </summary>
-        /// <returns></returns>
-        public float GetAccuracy(LabelledBatch<Tuple<object, object>> batch)
-        {
-            if (batch.Count() == 0)
-                throw new Exception("No items in batch");
-
-            float accuracy = 0f;
-            foreach (var item in batch)
-            {
-                object input = item.Item1;
-                object target = item.Item2;
-
-                object guess = Forward(input);
-
-                accuracy += guess.Equals(target) ? 1 : 0;
-            }
-
-            return accuracy / batch.Count();
-        }
-
-        public float GetLoss(LabelledBatch<Tuple<object, object>> batch)
-        {
-            if (batch.Count() == 0)
-                throw new Exception("No items in batch");
-
-            float loss = 0f;
-            foreach (var item in batch)
-            {
-                object input = item.Item1;
-                object target = item.Item2;
-
-                Forward(input, returnResult: false);
-
-                float[] values = Layers.Last().GetErrors();
-
-                foreach (var error in Layers.Last().GetErrors())
-                    loss += Math.Abs(error);
-            }
-
-            return loss;
-        }
-
-        /// <summary>
-        /// Gets the Categorical Cross-Entropy described by the function 
-        /// </summary>
-        /// <param name="batch"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        public float GetCategoricalCrossEntropy(LabelledBatch<Tuple<object, object>> batch)
-        {
-            if (batch.Count() == 0)
-                throw new Exception("No items in batch");
-
-            // get the type of the output layer
-            Type type = Layers.Last().GetType();
-
-            var OutputLayer = Convert.ChangeType(Layers.Last(), type);
-            var backPostProcess = type.GetMethod("BackPostprocess");
-            if (backPostProcess == null)
-                throw new Exception("BackPostprocess was null on the last layer");
-            
-            float loss = 0f;
-            foreach (var item in batch)
-            {
-                object input = item.Item1;
-                object target = item.Item2;
-
-                Forward(input, returnResult: false);
-
-                float[] expected = backPostProcess.Invoke(OutputLayer, new object[] { target }) as float[];
-                float[] predicted = Layers.Last().GetNodes() as float[];
-
-                //Console.WriteLine("+++++");
-                //Console.WriteLine(expected);
-                //Console.WriteLine(predicted);
-
-            }
-
-
-
-            return loss;
         }
 
         #endregion

@@ -14,8 +14,11 @@ using IanNet.IanNet.Kernel;
 
 namespace IanNet.IanNet.Layers
 {
-    public class MaxPooling : Layer2D
+    public class MaxPooling2D : Layer2D
     {
+        // metadata
+        private readonly string defaultName = "MaxPooling2D";
+
         Shape2D FilterShape;
         Action<
             Index2D,
@@ -27,10 +30,11 @@ namespace IanNet.IanNet.Layers
         /// <summary>
         /// Pass in the filter shape that you want
         /// </summary>
-        public MaxPooling(Shape2D FilterShape, IOptimizer2D optimizer = null) 
+        public MaxPooling2D(Shape2D FilterShape, IOptimizer2D optimizer = null) 
             : base(optimizer: optimizer)
         { 
             this.FilterShape = FilterShape;
+            Name = defaultName;
         }
 
         public override void InitCpu()
@@ -65,6 +69,22 @@ namespace IanNet.IanNet.Layers
         {
             poolKernel(GetIndex2D(nodes), FilterShape.Width, FilterShape.Height, inputsBuffer, nodesBuffer);
         }
+
+        /// <summary>
+        /// Not fully defined because I haven't gotten into the errors for CNNs yet
+        /// </summary>
+        public override void PassBackError()
+        {
+            // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
+            if (upstreamErrorsBuffer == null)
+                return;
+
+            //transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
+            //multiplyKernel(NumberOfInputs, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
+        }
+
+        // MaxPooling does not have errors that need to be corrected
+        public override void BackPropogate() { }
 
         /// <summary>
         /// Returns the options object for the NEXT layer to use

@@ -17,28 +17,31 @@ namespace IanNet.IanNet.Initializers
     public class HeUniform2D : IInitializer2D
     {
         public int n;
-        public Action<Index2D, ArrayView2D<float, Stride2D.DenseX>, int, int> guassian2DKernel;
+        public float scale;
+        public Action<Index2D, ArrayView2D<float, Stride2D.DenseX>, int, int, float> guassian2DKernel;
 
         /// <param name="n">The number of inputs to the node</param>
-        public HeUniform2D(int n)
+        /// <param name="scale">Adjust the scale to get outputs in the desired range</param>
+        public HeUniform2D(int n, float scale = 1f)
         {
             this.n = n;
+            this.scale = scale;
         }
 
         public void Compile(Accelerator device)
         {
             // compile kernels
-            guassian2DKernel = device.LoadAutoGroupedStreamKernel<Index2D, ArrayView2D<float, Stride2D.DenseX>, int, int>(Gaussian2D);
+            guassian2DKernel = device.LoadAutoGroupedStreamKernel<Index2D, ArrayView2D<float, Stride2D.DenseX>, int, int, float>(Gaussian2D);
         }
 
         public void InitializeNetwork(MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer, MemoryBuffer2D<float, Stride2D.DenseX> biasesBuffer)
         {
             Random random = new Random();
-            guassian2DKernel(weightsBuffer.IntExtent, weightsBuffer, random.Next(), n);
-            guassian2DKernel(biasesBuffer.IntExtent, biasesBuffer, random.Next(), n);
+            guassian2DKernel(weightsBuffer.IntExtent, weightsBuffer, random.Next(), n, scale);
+            guassian2DKernel(biasesBuffer.IntExtent, biasesBuffer, random.Next(), n, scale);
         }
 
-        static void Gaussian2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> output, int seed, int n)
+        static void Gaussian2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> output, int seed, int n, float scale)
         {
             var random = new XorShift64Star((ulong)(seed + index.X * output.Extent.Y + index.Y));  // Create a thread-specific random generator
 
@@ -54,8 +57,8 @@ namespace IanNet.IanNet.Initializers
             float gaussian = radius * XMath.Cos(theta);
             float stddev = XMath.Sqrt(2.0f / n);
 
-            // Scale the Gaussian number by the standard deviation
-            output[index] = gaussian * stddev;
+            // Scale the Gaussian number by the standard deviation (and the scale)
+            output[index] = gaussian * stddev * scale;
         }
     }
 }

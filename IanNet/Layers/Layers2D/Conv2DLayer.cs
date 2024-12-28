@@ -17,9 +17,12 @@ namespace IanNet.IanNet.Layers
     /// </summary>
     public partial class Conv2DLayer : Layer2D
     {
+        // metadata
+        private readonly string defaultName = "Conv2D";
+
         // gpu things
         //public Accelerator device;
-        
+
         // architecture things
         Random random = new Random();
         public float gradientClip = 0.1f;
@@ -48,6 +51,8 @@ namespace IanNet.IanNet.Layers
 
             // in case the dev wants to use the default
             this.optimizer = optimizer ?? new StochasticGradientDescent1D(0.1f);
+
+            Name = defaultName;
         }
 
         public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -123,26 +128,25 @@ namespace IanNet.IanNet.Layers
             //activationKernel(nodes.Length, nodesBuffer);
         }
 
-        //public override void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
-        //{
-        //    // run the kernels
-        //    //forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
-        //    //activationKernel(nodes.Length, nodesBuffer);
-        //}
-
+        /// <summary>
+        /// Not fully defined because I haven't gotten into the errors for CNNs yet
+        /// </summary>
         public override void PassBackError()
         {
             // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
             if (upstreamErrorsBuffer == null)
                 return;
 
-            transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
+            //transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
             //multiplyKernel(InputShape, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
         }
 
+        /// <summary>
+        /// Not fully defined because I haven't gotten into the errors for CNNs yet
+        /// </summary>
         public override void BackPropogate()
         {
-            optimizer.BackPropogate();
+            // optimizer.BackPropogate();
         }
 
         public void SetOptimizer(IOptimizer1D optimizer)

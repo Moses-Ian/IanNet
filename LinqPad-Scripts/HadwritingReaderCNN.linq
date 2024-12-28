@@ -54,20 +54,15 @@ void Main()
 	
 	var output = Net.Forward(image);
 	
-	var softmaxLayer = Net.Layers[6] as Softmax1D;
-	Console.WriteLine("Input to softmax:");
-	Console.WriteLine(softmaxLayer.GetInputs());
-	Console.WriteLine("Output of softmax:");
-	Console.WriteLine(softmaxLayer.GetOutputs());
 	
 	
 	
 	
 	
-	Console.WriteLine("done");
-	return;
+	//Console.WriteLine("done");
+	//return;
 	
-	/*var batch = new LabelledBatch<Tuple<object, object>>();
+	var batch = new LabelledBatch<Tuple<object, object>>();
 	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(take);
 	foreach(var line in lines)
 	{
@@ -80,8 +75,7 @@ void Main()
 	var options = new TrainingOptions()
 	{
 		Epochs = epochs,
-		TrackAccuracy = true,
-		TrackLoss = true,
+		TrackCategoricalCrossEntropy = true,
 		HistoryStepSize = historyStepSize
 	};
 	
@@ -130,7 +124,7 @@ void Main()
 	
 	Console.WriteLine("done");
 	CvInvoke.WaitKey(0);
-	CvInvoke.DestroyAllWindows();*/
+	CvInvoke.DestroyAllWindows();
 }
 
 
@@ -147,10 +141,10 @@ public Net MakeTheNetwork()
 	
 	var convLayer = new Conv2DLayer(1, new Shape2D(3, 3));
 	//convLayer.SetInitializer(new RawData2D(new float[,] { { 1, 2 } , { -1, 0 } }, new float[,] { { 1, 2 } , { -1, 0 } }));
-	convLayer.SetInitializer(new HeUniform2D(9));
+	convLayer.SetInitializer(new HeUniform2D(9, scale: 1.0f / 741f));
 	convLayer.SetActivation(new ReLU2D());
 	
-	var poolingLayer = new MaxPooling(new Shape2D(2, 2));
+	var poolingLayer = new MaxPooling2D(new Shape2D(2, 2));
 	var flattenLayer = new Flatten1D();
 	
 	var denseLayer1 = new Layer1D(100);

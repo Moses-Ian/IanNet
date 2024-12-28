@@ -11,6 +11,9 @@ namespace IanNet.IanNet.Layers
 {
     public class Input2DLayer<T> : Layer2D
     {
+        // metadata
+        private readonly string defaultName = "Input2D";
+
         public delegate float[,] PreprocessDelegate(T input);
         private PreprocessDelegate _Preprocess;
 
@@ -18,6 +21,7 @@ namespace IanNet.IanNet.Layers
             : base(InputShape)
         {
             this.InputShape = InputShape;
+            Name = defaultName;
         }
 
         public virtual void Compile(Accelerator device, MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -73,6 +77,10 @@ namespace IanNet.IanNet.Layers
         {
             _Preprocess = preprocess;
         }
+
+        public override void PassBackError() { }
+
+        public override void BackPropogate() { }
 
         public override object GetOutputs()
         {
