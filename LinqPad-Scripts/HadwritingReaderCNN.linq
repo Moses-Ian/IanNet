@@ -160,11 +160,8 @@ public Net MakeTheNetwork()
 	
 	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
 	var outputLayer = new Output1DLayer<Label>(numberOfLabels);
-	//outputLayer.SetPostprocess(Postprocess);			// if you want to define your own processing functions, this is how you do it
-	//outputLayer.SetBackPostprocess(BackPostprocess);
 	outputLayer.SetProcessing(new EnumProcessing<Label>());
-	//outputLayer.SetOptimizer(new Adam(learningRate));
-	//outputLayer.SetOptimizer(new StochasticGradientDescent(learningRate));
+	// The output layer uses categorical cross-entropy by default
 	
 	net.AddLayer(inputLayer);
 	net.AddLayer(convLayer);

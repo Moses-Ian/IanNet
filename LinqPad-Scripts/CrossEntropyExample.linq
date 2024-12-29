@@ -29,7 +29,7 @@ void Main()
 {
 	//int epochs=10;
 	//int take=int.MaxValue;
-	int epochs = 1;
+	int epochs = 200;
 	int take = 1;
 	bool oldWay = false;
 	int historyStepSize = 1;
@@ -66,17 +66,18 @@ void Main()
 	var categoricalCrossEntropy = Measurements.GetCategoricalCrossEntropy(Net, batch);
 	Console.WriteLine(categoricalCrossEntropy);
 	
-	/*
+	
 	var options = new TrainingOptions()
 	{
 		Epochs = epochs,
 		TrackCategoricalCrossEntropy = true,
+		TrackAccuracy = true,
 		HistoryStepSize = historyStepSize
 	};
 	
 	var earlyStopping = new EarlyStopping();
 	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfLossIsNaN);
-	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfAccuracyIsHigh(0.99f));
+	//earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfAccuracyIsHigh(0.99f));
 	Net.SetEarlyStopping(earlyStopping);
 	
 	var stopwatch = new Stopwatch();
@@ -85,7 +86,7 @@ void Main()
 	Net.Train(batch, options);
 	
 	
-	Label result = (Label) Net.Forward(image);
+	Species result = (Species) Net.Forward(flower);
 	Console.WriteLine(result.ToString());
 	
 	stopwatch.Stop();
@@ -103,7 +104,7 @@ void Main()
 	}
 	
 	Console.WriteLine(Net.history.Epochs);
-	var graph2 = Net.history.ToLossGraph(400, 200);
+	var graph2 = Net.history.ToCategoricalCrossEntropyGraph(400, 200);
 	
 	var graphImage2 = new Image<Gray, Byte>(graph.GetLength(1), graph.GetLength(0));
 	for(int x=0; x<graph.GetLength(1); x++)
@@ -121,7 +122,7 @@ void Main()
 	Console.WriteLine("done");
 	CvInvoke.WaitKey(0);
 	CvInvoke.DestroyAllWindows();
-	*/
+	
 }
 
 
