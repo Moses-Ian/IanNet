@@ -15,13 +15,15 @@ namespace IanNet.IanNet.Layers
         private PreprocessDelegate _Preprocess;
 
         // metadata;
-        public new string Name = "Input1DLayer";
+        private readonly string defaultName = "Input1D";
 
         public Input1DLayer(int NumberOfInputs)
             : base(NumberOfInputs)
         {
             this.NumberOfInputs = NumberOfInputs;
-            SetProcessing(new FloatArrayPreprocessing() as IPreprocessing<T>);
+            Name = defaultName;
+
+            //SetProcessing(new FloatArrayPreprocessing() as IPreprocessing<T>);
         }
 
         public void SetPreprocess(PreprocessDelegate preprocess)

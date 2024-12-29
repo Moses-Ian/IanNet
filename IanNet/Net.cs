@@ -25,6 +25,8 @@ namespace IanNet.IanNet
         // architecture things
         public float learningRate;
         public List<Layer> Layers;
+        public delegate float LossDelegate(Net Net, LabelledBatch<Tuple<object, object>> batch);
+        public LossDelegate Loss;
 
         //
         MemoryBuffer2D<float, Stride2D.DenseX> inputBatch;

@@ -12,13 +12,13 @@ namespace IanNet.IanNet.Batch
         List<Tuple> list;
         public bool randomize;
 
-        public LabelledBatch(bool randomize = true)
+        public LabelledBatch(bool randomize = false)
         {
             list = new List<Tuple>();
             this.randomize = randomize;
         }
 
-        public LabelledBatch(IEnumerable<Tuple> items, bool randomize = true)
+        public LabelledBatch(IEnumerable<Tuple> items, bool randomize = false)
         {
             list = items.ToList();
             this.randomize = randomize;

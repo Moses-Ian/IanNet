@@ -20,6 +20,7 @@
   <Namespace>IanNet.IanNet.DataProcessing</Namespace>
   <Namespace>IanNet.IanNet.Initializers</Namespace>
   <Namespace>IanNet.IanNet.Layers</Namespace>
+  <Namespace>IanNet.IanNet.Measurement</Namespace>
   <Namespace>IanNet.IanNet.Optimizers</Namespace>
   <Namespace>System.Drawing</Namespace>
 </Query>
@@ -44,34 +45,28 @@ void Main()
 	Console.WriteLine("Compiled successfully");
 	Console.WriteLine(Net.ToString());
 	
-	string firstLine = File.ReadLines(trainingFilepath).First();
-	var values = firstLine.Split(',');
-	int label = int.Parse(values[0]);
-	byte[] pixels = values.Skip(1).Select(byte.Parse).ToArray();
-	Image image = new Image(pixels);
-	//byte[] pixels = new byte[] { 1, 6, 2, 5, 3, 1, 7, 0, 4 };
-	//Image image = new Image(pixels);
-	
-	var output = Net.Forward(image);
+	var flower = new Flower(0.04f, 0.42f);
+	var species = Species.Setosa;
 	
 	
 	
+	var output = Net.Forward(flower);
+	
+	Console.WriteLine(output);
+	Console.WriteLine(Net.Layers.Last().GetInputs());
 	
 	
 	
 	//Console.WriteLine("done");
 	//return;
 	
-	var batch = new LabelledBatch<Tuple<object, object>>();
-	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(take);
-	foreach(var line in lines)
-	{
-		values = line.Split(',');
-		label = int.Parse(values[0]);
-		byte[] pix = values.Skip(1).Select(byte.Parse).ToArray();
-		batch.Add(new Tuple<object, object>(new Image(pix), (Label) label));
-	}
 	
+	var batch = CreateTheBatch();
+	
+	var categoricalCrossEntropy = Measurements.GetCategoricalCrossEntropy(Net, batch);
+	Console.WriteLine(categoricalCrossEntropy);
+	
+	/*
 	var options = new TrainingOptions()
 	{
 		Epochs = epochs,
@@ -88,6 +83,7 @@ void Main()
 	stopwatch.Start();
 
 	Net.Train(batch, options);
+	
 	
 	Label result = (Label) Net.Forward(image);
 	Console.WriteLine(result.ToString());
@@ -125,84 +121,107 @@ void Main()
 	Console.WriteLine("done");
 	CvInvoke.WaitKey(0);
 	CvInvoke.DestroyAllWindows();
+	*/
 }
 
 
 public string trainingFilepath = "F:/projects_csharp/handwriting-reader/datasets/mnist_train_small.csv";
 public int scale = 8;
 
+public LabelledBatch<Tuple<object, object>> CreateTheBatch()
+{
+	var batch = new LabelledBatch<Tuple<object, object>>();
+	
+	var flower = new Flower(0.04f, 0.42f);
+	var species = Species.Setosa;
+	batch.Add(new Tuple<object, object>(flower, species));
+	
+	flower = new Flower(1f, 0.54f);
+	species = Species.Virginica;
+	batch.Add(new Tuple<object, object>(flower, species));
+	
+	flower = new Flower(.5f, .37f);
+	species = Species.Versicolor;
+	batch.Add(new Tuple<object, object>(flower, species));
+	
+	return batch;
+}
+
 public Net MakeTheNetwork()
 {
 	var net = new Net();
 	var learningRate = 0.1f;
 	
-	var inputLayer = new Input2DLayer<Image>(new Shape2D(28, 28));
+	var inputLayer = new Input1DLayer<Flower>(2);
 	inputLayer.SetPreprocess(Preprocess);
 	
-	var convLayer = new Conv2DLayer(1, new Shape2D(3, 3));
-	//convLayer.SetInitializer(new RawData2D(new float[,] { { 1, 2 } , { -1, 0 } }, new float[,] { { 1, 2 } , { -1, 0 } }));
-	convLayer.SetInitializer(new HeUniform(9, scale: 1.0f / 741f));
-	convLayer.SetActivation(new ReLU2D());
-	
-	var poolingLayer = new MaxPooling2D(new Shape2D(2, 2));
-	var flattenLayer = new Flatten1D();
-	
-	var denseLayer1 = new Layer1D(100);
+	var denseLayer1 = new Layer1D(2);
 	denseLayer1.SetActivation(new ReLU1D());
-	denseLayer1.SetInitializer(new HeUniform(100));
+	float[,] initialWeights = new float[,] 
+	{
+		{-2.5f, 0.6f},
+		{-1.5f, 0.4f}
+	};
+	float[] initialBiases = new float[]
+	{
+		1.6f,
+		0.7f
+	};
 	
-	var denseLayer2 = new Layer1D(10);
+	denseLayer1.SetInitializer(new RawData(initialWeights, initialBiases));
+	
+	var denseLayer2 = new Layer1D(3);
 	denseLayer2.SetActivation(new None1D());
-	denseLayer2.SetInitializer(new HeUniform(10));
+	initialWeights = new float[,]
+	{
+		{-0.1f, 1.5f},
+		{2.4f, -5.2f},
+		{-2.2f, 3.7f}
+	};
+	initialBiases = new float[]
+	{
+		0f,
+		0f,
+		1f
+	};
+	denseLayer2.SetInitializer(new RawData(initialWeights, initialBiases));
 	
 	var softmaxLayer = new Softmax1D();
-	//hiddenLayer2.SetOptimizer(new Adam(learningRate));
 	
-	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
-	var outputLayer = new Output1DLayer<Label>(numberOfLabels);
-	//outputLayer.SetPostprocess(Postprocess);			// if you want to define your own processing functions, this is how you do it
-	//outputLayer.SetBackPostprocess(BackPostprocess);
-	outputLayer.SetProcessing(new EnumProcessing<Label>());
-	//outputLayer.SetOptimizer(new Adam(learningRate));
-	//outputLayer.SetOptimizer(new StochasticGradientDescent(learningRate));
+	int numberOfLabels = Enum.GetValues(typeof(Species)).Length;
+	var outputLayer = new Output1DLayer<Species>(numberOfLabels);
+	outputLayer.SetProcessing(new EnumProcessing<Species>());
 	
 	net.AddLayer(inputLayer);
-	net.AddLayer(convLayer);
-	net.AddLayer(poolingLayer);
-	net.AddLayer(flattenLayer);
 	net.AddLayer(denseLayer1);
 	net.AddLayer(denseLayer2);
 	net.AddLayer(softmaxLayer);
 	net.AddLayer(outputLayer);
 	
+	// something like this
+	//net.Loss = CategoricalCrossEntropy;
 	
 	return net;
 }
 
-static float[,] Preprocess(Image image)
+static float[] Preprocess(Flower flower)
 {
-	var result = new float[image.pixels.GetLength(0), image.pixels.GetLength(1)];
-	
-	for (int i=0; i<result.GetLength(0); i++)
-		for (int j=0; j<result.GetLength(1); j++)
-			result[i,j] = image.pixels[i,j];// / 255.0f;
-
-	return result;
+	return new float[] { flower.Petal, flower.Sepal };
 }
 
-static Label Postprocess(float[] values)
+static Species Postprocess(float[] values)
 {
 	int maxIndex = 0;
     for (int i = 1; i < values.Length; i++)
         if (values[i] > values[maxIndex])
             maxIndex = i;
 
-    return (Label)maxIndex;
+    return (Species)maxIndex;
 }
 
-static float[] BackPostprocess(Label label)
+static float[] BackPostprocess(Species label)
 {
-	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
+	int numberOfLabels = Enum.GetValues(typeof(Species)).Length;
 	var result = new float[numberOfLabels];
 	result[(int)label] = 1;
 	return result;
@@ -226,29 +245,21 @@ public void ShowTheFirstLetter()
 	CvInvoke.Imshow($"{label}", scaledImage);
 }
 
-public struct Image
+public struct Flower
 {
-	public byte[,] pixels;
+	public float Petal;
+	public float Sepal;
 	
-	public Image(byte[] p)
+	public Flower(float Petal, float Sepal)
 	{
-		pixels = new byte[28, 28];
-		for (int i=0; i<pixels.GetLength(0); i++)
-			for (int j=0; j<pixels.GetLength(1); j++)
-				pixels[i, j] = p[i*pixels.GetLength(1) + j];
+		this.Petal = Petal;
+		this.Sepal = Sepal;
 	}
 }
 
-public enum Label
+public enum Species
 {
-	_0,
-    _1,
-	_2,
-	_3,
-	_4,
-	_5,
-	_6,
-	_7,
-	_8,
-	_9,
+	Setosa,
+	Versicolor,
+	Virginica
 }

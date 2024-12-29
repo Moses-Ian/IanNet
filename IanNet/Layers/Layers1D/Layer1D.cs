@@ -26,7 +26,7 @@ namespace IanNet.IanNet.Layers
         Random random = new Random();
         public float gradientClip = 0.1f;
         IOptimizer1D optimizer;
-        public IInitializer1D initializer;
+        public IInitializer2D1D initializer;
         public IActivation1D IActivation = new Sigmoid1D();
 
         // core data
@@ -71,9 +71,11 @@ namespace IanNet.IanNet.Layers
 
             CompileKernels();
             optimizer.CompileKernels();
+            initializer.CompileKernels(device);
 
             InitNetwork();
             optimizer.InitNetwork();
+            initializer.InitializeNetwork(weightsBuffer, biasesBuffer);
         }
 
         public virtual void InitGpu(Accelerator device, Dictionary<string, string> Options = null)
@@ -136,7 +138,7 @@ namespace IanNet.IanNet.Layers
             optimizer.SetActivation(IActivation);
         }
 
-        public void SetInitializer(IInitializer1D initializer)
+        public void SetInitializer(IInitializer2D1D initializer)
         {
             this.initializer = initializer;
         }

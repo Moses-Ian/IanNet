@@ -4,10 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IanNet.IanNet.Batch;
+using IanNet.IanNet.Constant;
 
 namespace IanNet.IanNet.Measurement
 {
-    static class Measurements
+    /// <summary>
+    /// These methods are for the history. They calculate this information on the Cpu. They do not return their results in a format that is useful for backpropogation.
+    /// </summary>
+    public static class Measurements
     {
         /// <summary>
         /// Assumptions: The label should override Equals().
@@ -54,7 +58,7 @@ namespace IanNet.IanNet.Measurement
         }
 
         /// <summary>
-        /// Gets the Categorical Cross-Entropy described by the function 
+        /// Gets the Categorical Cross-Entropy. Assumes you used Softmax1D. 
         /// </summary>
         public static float GetCategoricalCrossEntropy(Net Net, LabelledBatch<Tuple<object, object>> batch)
         {
@@ -69,7 +73,7 @@ namespace IanNet.IanNet.Measurement
             if (backPostProcess == null)
                 throw new Exception("BackPostprocess was null on the last layer");
 
-            float loss = 0f;
+            float categoricalCrossEntropy = 0f;
             foreach (var item in batch)
             {
                 // get the input and target
@@ -79,24 +83,23 @@ namespace IanNet.IanNet.Measurement
                 // get the guess (without the post-processing)
                 // aka predicted
                 Net.Forward(input, returnResult: false);
-                float[] guess = Net.Layers.Last().GetNodes() as float[];
-
+                float[] guess = Net.Layers.Last().GetInputs() as float[];
+                
                 // float[] expected = backPostProcess(target)
                 float[] expected = backPostProcess.Invoke(OutputLayer, new object[] { target }) as float[];
 
 
-                Console.WriteLine("+++++");
-                Console.WriteLine("Categorical Cross Entropy");
-                Console.WriteLine("Expected");
-                Console.WriteLine(expected);
-                Console.WriteLine("Guess");
-                Console.WriteLine(guess);
-
+                for (int i=0; i<guess.Length; i++)
+                {
+                    var logit = (float)(-Math.Log(guess[i]) / Constants.ln2);
+                    var crossEntropy = logit * expected[i];
+                    categoricalCrossEntropy += crossEntropy;
+                }
             }
 
 
 
-            return loss;
+            return categoricalCrossEntropy;
         }
     }
 }

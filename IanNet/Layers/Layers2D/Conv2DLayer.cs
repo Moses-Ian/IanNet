@@ -117,7 +117,7 @@ namespace IanNet.IanNet.Layers
 
         public override void InitNetwork()
         {
-            initializer.Compile(device);
+            initializer.CompileKernels(device);
             initializer.InitializeNetwork(weightsBuffer, biasesBuffer);
         }
 
