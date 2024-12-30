@@ -54,13 +54,20 @@ void Main()
 	
 	var output = Net.Forward(image);
 	
+	//Console.WriteLine(Net.Layers[0].GetInputs());
+	//Console.WriteLine(Net.Layers[1].GetNodes());
+	//Console.WriteLine(Net.Layers[2].GetNodes());
+	//Console.WriteLine(Net.Layers[3].GetNodes());
+	//Console.WriteLine(Net.Layers[4].GetNodes());
+	//Console.WriteLine(Net.Layers[5].GetNodes());
+	//Console.WriteLine(Net.Layers[6].GetNodes());
+	//Console.WriteLine(Net.Layers[7].GetNodes());
 	
 	
 	
 	
-	
-	//Console.WriteLine("done");
-	//return;
+	Console.WriteLine("done");
+	return;
 	
 	var batch = new LabelledBatch<Tuple<object, object>>();
 	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(take);
@@ -139,7 +146,7 @@ public Net MakeTheNetwork()
 	var inputLayer = new Input2DLayer<Image>(new Shape2D(28, 28));
 	inputLayer.SetPreprocess(Preprocess);
 	
-	var convLayer = new Conv2DLayer(1, new Shape2D(3, 3));
+	var convLayer = new Conv2D(new Shape2D(3, 3));
 	//convLayer.SetInitializer(new RawData2D(new float[,] { { 1, 2 } , { -1, 0 } }, new float[,] { { 1, 2 } , { -1, 0 } }));
 	convLayer.SetInitializer(new HeUniform(9, scale: 1.0f / 741f));
 	convLayer.SetActivation(new ReLU2D());
@@ -160,7 +167,7 @@ public Net MakeTheNetwork()
 	
 	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
 	var outputLayer = new Output1DLayer<Label>(numberOfLabels);
-	outputLayer.SetProcessing(new EnumProcessing<Label>());
+	outputLayer.SetProcessing(new EnumProcessing1D<Label>());
 	// The output layer uses categorical cross-entropy by default
 	
 	net.AddLayer(inputLayer);

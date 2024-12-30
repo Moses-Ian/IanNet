@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace IanNet.IanNet.DataProcessing
 {
-    public interface IProcessing<T>
+    public interface IPreprocessing2D<T>
     {
-        public T Process(float[] values);
-        public float[] BackProcess(T label);
+        public float[,] Preprocess(T data);
     }
 }

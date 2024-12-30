@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IanNet.IanNet.DataProcessing
 {
-    public class EnumProcessing<T> : IProcessing<T> where T : Enum
+    public class EnumProcessing1D<T> : IProcessing1D<T> where T : Enum
     {
         public T Process(float[] values)
         {

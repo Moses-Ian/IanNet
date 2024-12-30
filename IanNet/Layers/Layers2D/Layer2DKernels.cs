@@ -62,7 +62,7 @@ namespace IanNet.IanNet.Layers
                 Index1D,
                 ArrayView1D<float, Stride1D.Dense>,
                 ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.getError);
+                ArrayView1D<float, Stride1D.Dense>>(Kernels.getError1D);
             transposeKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
                 ArrayView2D<float, Stride2D.DenseX>,

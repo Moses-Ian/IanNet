@@ -36,7 +36,7 @@ namespace IanNet.IanNet.Layers
 
         // derived data
         public float[,] weightsTransposed;
-        public float[] errors;
+        public float[,] errors;
 
         public Layer2D(Shape2D NodeShape = null, IOptimizer2D optimizer = null)
         {
@@ -194,12 +194,12 @@ namespace IanNet.IanNet.Layers
             return nodes;
         }
 
-        public override float[] GetErrors()
+        public override float[,] GetErrors()
         {
             if (errorsBuffer == null)
                 return null;
 
-            errors = errorsBuffer.GetAsArray1D();
+            errors = errorsBuffer.GetAsArray2D();
             return errors;
         }
 
@@ -226,7 +226,7 @@ namespace IanNet.IanNet.Layers
             throw new NotImplementedException();
         }
 
-        public virtual float[] BackPostprocess(object obj)
+        public virtual float[,] BackPostprocess(object obj)
         {
             throw new NotImplementedException();
         }

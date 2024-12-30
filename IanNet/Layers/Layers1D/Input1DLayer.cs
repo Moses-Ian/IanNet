@@ -31,7 +31,7 @@ namespace IanNet.IanNet.Layers
             _Preprocess = preprocess;
         }
 
-        public void SetProcessing(IPreprocessing<T> preprocessing)
+        public void SetProcessing(IPreprocessing1D<T> preprocessing)
         {
             _Preprocess = preprocessing.Preprocess;
         }

@@ -121,7 +121,12 @@ namespace IanNet.IanNet.Kernel
 
         #endregion
 
-        public static void getError(Index1D node, ArrayView1D<float, Stride1D.Dense> guess, ArrayView1D<float, Stride1D.Dense> target, ArrayView1D<float, Stride1D.Dense> error)
+        public static void getError1D(Index1D node, ArrayView1D<float, Stride1D.Dense> guess, ArrayView1D<float, Stride1D.Dense> target, ArrayView1D<float, Stride1D.Dense> error)
+        {
+            error[node] = target[node] - guess[node];
+        }
+
+        public static void getError2D(Index2D node, ArrayView2D<float, Stride2D.DenseX> guess, ArrayView2D<float, Stride2D.DenseX> target, ArrayView2D<float, Stride2D.DenseX> error)
         {
             error[node] = target[node] - guess[node];
         }

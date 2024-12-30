@@ -28,20 +28,26 @@ namespace IanNet.IanNet.Initializers
 
         public void InitializeNetwork(MemoryBuffer1D<float, Stride1D.Dense> weightsBuffer, MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer)
         {
-            weightsBuffer.CopyFromCPU(initialWeights as float[]);
-            biasesBuffer.CopyFromCPU(initialBiases as float[]);
+            if (initialWeights != null)
+                weightsBuffer.CopyFromCPU(initialWeights as float[]);
+            if (initialBiases != null)
+                biasesBuffer.CopyFromCPU(initialBiases as float[]);
         }
 
         public void InitializeNetwork(MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer, MemoryBuffer2D<float, Stride2D.DenseX> biasesBuffer)
         {
-            weightsBuffer.CopyFromCPU(initialWeights as float[,]);
-            biasesBuffer.CopyFromCPU(initialBiases as float[,]);
+            if (initialWeights != null)
+                weightsBuffer.CopyFromCPU(initialWeights as float[,]);
+            if (initialBiases != null)
+                biasesBuffer.CopyFromCPU(initialBiases as float[,]);
         }
 
         public void InitializeNetwork(MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer, MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer)
         {
-            weightsBuffer.CopyFromCPU(initialWeights as float[,]);
-            biasesBuffer.CopyFromCPU(initialBiases as float[]);
+            if (initialWeights != null)
+                weightsBuffer.CopyFromCPU(initialWeights as float[,]);
+            if (initialBiases != null)
+                biasesBuffer.CopyFromCPU(initialBiases as float[]);
         }
     }
 }

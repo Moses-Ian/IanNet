@@ -7,27 +7,28 @@ using System.Text;
 using System.Threading.Tasks;
 using IanNet.IanNet.Kernel;
 using IanNet.IanNet.DataProcessing;
+using IanNet.Helpers;
 
 namespace IanNet.IanNet.Layers
 {
-    public class Output1DLayer<T> : Layer1D
+    public class Output2D<T> : Layer2D
     {
-        private readonly string defaultName = "Output1DLayer";
-        public delegate T PostprocessDelegate(float[] values);
+        private readonly string defaultName = "Output2D";
+        public delegate T PostprocessDelegate(float[,] values);
         public PostprocessDelegate Postprocess;
-        public delegate float[] BackPostprocessDelegate(T values);
+        public delegate float[,] BackPostprocessDelegate(T values);
         private BackPostprocessDelegate _BackPostprocess;
-        protected MemoryBuffer1D<float, Stride1D.Dense> targetsBuffer;
+        protected MemoryBuffer2D<float, Stride2D.DenseX> targetsBuffer;
         public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>> getErrorKernel;
-        public float[] targets;
+            Index2D,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>> getErrorKernel;
+        public float[,] targets;
 
 
-        public Output1DLayer(int NumberOfOutputs)
-            : base(NumberOfOutputs)
+        public Output2D(Shape2D NodeShape)
+            : base(NodeShape)
         {
             Name = defaultName;
         }
@@ -42,7 +43,7 @@ namespace IanNet.IanNet.Layers
             _BackPostprocess = backPostprocess;
         }
 
-        public void SetProcessing(IProcessing1D<T> processing)
+        public void SetProcessing(IProcessing2D<T> processing)
         {
             Postprocess = processing.Process;
             _BackPostprocess = processing.BackProcess;
@@ -50,7 +51,7 @@ namespace IanNet.IanNet.Layers
 
         public override void Compile(Accelerator device, MemoryBuffer inputsBuffer = null, Dictionary<string, string> Options = null)
         {
-            var InputsBuffer = inputsBuffer as MemoryBuffer1D<float, Stride1D.Dense>;
+            var InputsBuffer = inputsBuffer as MemoryBuffer2D<float, Stride2D.DenseX>;
 
             InitGpu(device, Options);
 
@@ -61,30 +62,32 @@ namespace IanNet.IanNet.Layers
             CompileKernels();
         }
 
-        public override void InitCpu() 
+        public override void InitCpu()
         {
-            inputs = new float[NumberOfInputs];
+            inputs = InputShape.ToNewMatrix();
+            targets = NodeShape.ToNewMatrix();
+            errors = NodeShape.ToNewMatrix();
         }
 
-        public override void InitBuffers(MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = null)
+        public override void InitBuffers(MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null)
         {
             // allocate memory on the gpu
             if (inputsBuffer == null)
-                this.inputsBuffer = device.Allocate1D<float>(inputs.Length);
+                this.inputsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(inputs));
             else
                 this.inputsBuffer = inputsBuffer;
 
-            targetsBuffer = device.Allocate1D<float>(GetTargetSize());
-            errorsBuffer = device.Allocate1D<float>(GetTargetSize());
+            targetsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(targets));
+            errorsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(errors));
         }
 
         public override void CompileKernels()
         {
             getErrorKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>,
-                ArrayView1D<float, Stride1D.Dense>>(Kernels.getError1D);
+                Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>>(Kernels.getError2D);
         }
 
         public override void Forward() { }
@@ -107,7 +110,7 @@ namespace IanNet.IanNet.Layers
             if (inputsBuffer == null)
                 throw new Exception("Output Layer's inputs buffer is null");
 
-            inputs = inputsBuffer.GetAsArray1D();
+            inputs = inputsBuffer.GetAsArray2D();
             return Postprocess(inputs);
         }
 
@@ -115,33 +118,33 @@ namespace IanNet.IanNet.Layers
         /// Returns the inputs to this layer without processing them
         /// </summary>
         /// <exception cref="Exception">Output Layer's inputs buffer is null</exception>
-        public override float[] GetNodes()
+        public override float[,] GetNodes()
         {
             if (inputsBuffer == null)
                 throw new Exception("Output Layer's inputs buffer is null");
 
-            return inputsBuffer.GetAsArray1D();
+            return inputsBuffer.GetAsArray2D();
         }
 
-        public virtual MemoryBuffer1D<float, Stride1D.Dense> GetTargetsBuffer()
+        public virtual MemoryBuffer2D<float, Stride2D.DenseX> GetTargetsBuffer()
         {
             return targetsBuffer;
         }
 
         public override void LoadTarget(object target)
         {
-            float[] targets = _BackPostprocess((T)target);
+            float[,] targets = _BackPostprocess((T)target) as float[,];
             targetsBuffer.CopyFromCPU(targets);
         }
 
         public override void CalculateError()
         {
-            getErrorKernel(NumberOfNodes, inputsBuffer, targetsBuffer, errorsBuffer);
+            getErrorKernel(GetIndex2D(errors), inputsBuffer, targetsBuffer, errorsBuffer);
         }
 
-        public override float[] BackPostprocess(object values)
+        public override float[,] BackPostprocess(object values)
         {
-            return _BackPostprocess((T)values);
+            return _BackPostprocess((T)values) as float[,];
         }
 
         public override string ToString()
@@ -149,21 +152,17 @@ namespace IanNet.IanNet.Layers
             return $"Output layer with an output type {typeof(T).Name}. ";
         }
 
-        public int GetTargetSize()
+        public Shape2D GetTargetSize()
         {
-            return NumberOfNodes;
-
-            // This was working for a LONG time, so I don't want to cut it just yet
-            //float[] targets = _BackPostprocess(default);
-            //return targets.Length;
+            return new Shape2D(targets);
         }
 
-        public float[] GetTarget()
+        public float[,] GetTarget()
         {
             if (targetsBuffer == null)
                 return null;
 
-            targets = targetsBuffer.GetAsArray1D();
+            targets = targetsBuffer.GetAsArray2D();
             return targets;
         }
     }

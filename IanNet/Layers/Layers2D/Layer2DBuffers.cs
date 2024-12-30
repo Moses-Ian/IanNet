@@ -16,10 +16,10 @@ namespace IanNet.IanNet.Layers
         protected MemoryBuffer2D<float, Stride2D.DenseX> weightsTransposedBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> biasesBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> nodesBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense>  errorsBuffer;
+        protected MemoryBuffer2D<float, Stride2D.DenseX> errorsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> targetsBuffer;
         //protected MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> upstreamErrorsBuffer;
+        protected MemoryBuffer2D<float, Stride2D.DenseX> upstreamErrorsBuffer;
 
 
         // buffer for holding transient data
@@ -42,7 +42,7 @@ namespace IanNet.IanNet.Layers
             weightsTransposedBuffer = device.Allocate2DDenseX<float>(new Index2D(weights.GetLength(1), weights.GetLength(0)));
             biasesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(biases));
             nodesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(nodes));
-            errorsBuffer = transientBuffer;
+            errorsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(errors));
             targetsBuffer = transientBuffer;
         }
 
@@ -82,14 +82,14 @@ namespace IanNet.IanNet.Layers
             this.inputsBuffer = inputsBuffer;
         }
 
-        //public virtual void SetDownstreamErrorsBuffer(MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer)
-        //{
-        //    this.downstreamErrorsBuffer = downstreamErrorsBuffer;
-        //}
-
         public override void SetUpstreamErrorsBuffer(MemoryBuffer upstreamErrorsBuffer)
         {
-            this.upstreamErrorsBuffer = upstreamErrorsBuffer as MemoryBuffer1D<float, Stride1D.Dense>;
+            Console.WriteLine($"{this.Name} set upstreamerrorsbuffer");
+            if (upstreamErrorsBuffer == null)
+            {
+                Console.WriteLine("the buffer is null");
+            }
+            this.upstreamErrorsBuffer = upstreamErrorsBuffer as MemoryBuffer2D<float, Stride2D.DenseX>;
         }
 
         #endregion

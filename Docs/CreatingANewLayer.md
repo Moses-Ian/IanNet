@@ -104,7 +104,7 @@ public class Softmax1D : Layer1D
 }
 ```
 
-## Add any arrays that you need
+### Add any arrays that you need
 
 These are usually used for debugging.
 

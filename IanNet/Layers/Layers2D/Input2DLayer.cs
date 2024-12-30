@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IanNet.Helpers;
+using IanNet.IanNet.DataProcessing;
 
 namespace IanNet.IanNet.Layers
 {
@@ -22,6 +23,16 @@ namespace IanNet.IanNet.Layers
         {
             this.InputShape = InputShape;
             Name = defaultName;
+        }
+
+        public void SetPreprocess(PreprocessDelegate preprocess)
+        {
+            _Preprocess = preprocess;
+        }
+
+        public void SetProcessing(IPreprocessing2D<T> preprocessing)
+        {
+            _Preprocess = preprocessing.Preprocess;
         }
 
         public virtual void Compile(Accelerator device, MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null, Dictionary<string, string> Options = null)
@@ -72,11 +83,6 @@ namespace IanNet.IanNet.Layers
         }
 
         public override void Forward() { }
-
-        public void SetPreprocess(PreprocessDelegate preprocess)
-        {
-            _Preprocess = preprocess;
-        }
 
         public override void PassBackError() { }
 

@@ -9,14 +9,14 @@ namespace IanNet.IanNet.DataProcessing
     /// <summary>
     /// For when you are expecting the output layer to pass through the float[] unchanged.
     /// </summary>
-    public class FloatArrayProcessing : IProcessing<float[]>
+    public class FloatArrayProcessing2D : IProcessing2D<float[,]>
     {
-        public float[] Process(float[] values)
+        public float[,] Process(float[,] values)
         {
             return values;
         }
 
-        public float[] BackProcess(float[] label)
+        public float[,] BackProcess(float[,] label)
         {
             return label;
         }

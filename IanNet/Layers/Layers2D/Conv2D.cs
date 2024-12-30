@@ -13,9 +13,9 @@ using System.ComponentModel.Design;
 namespace IanNet.IanNet.Layers
 {
     /// <summary>
-    /// This is meant to be a generic layer, but it's implemented as a convolutional layer
+    /// This is meant to be a generic layer, but it's implemented as a convolutional layer. This version has exactly 1 filter.
     /// </summary>
-    public partial class Conv2DLayer : Layer2D
+    public partial class Conv2D : Layer2D
     {
         // metadata
         private readonly string defaultName = "Conv2D";
@@ -29,24 +29,17 @@ namespace IanNet.IanNet.Layers
         IOptimizer1D optimizer;
 
         // core data
-        //public float[,] weights;
-        //public float[,] biases;
-        //public float[,] inputs;
-        //public float[,] nodes;
+        public float[,] filter;
         public Shape2D InputShape;
         public Shape2D NodeShape;
         public Dictionary<string, string> Options;
-        public int NumberOfFilters;
         public Shape2D FilterShape;
 
-        // derived data
-        public float[,] weightsTransposed;
-        public float[] errors;
+        
 
-        public Conv2DLayer(int NumberOfFilters, Shape2D FilterShape, IOptimizer1D optimizer = null)
+        public Conv2D(Shape2D FilterShape, IOptimizer1D optimizer = null)
             : base(NodeShape: null) // we need to know the size of the input to determine the size of the output
         {
-            this.NumberOfFilters = NumberOfFilters;
             this.FilterShape = FilterShape;
 
             // in case the dev wants to use the default
@@ -75,9 +68,11 @@ namespace IanNet.IanNet.Layers
 
             CompileKernels();
             //optimizer.CompileKernels();
+            initializer.CompileKernels(device);
 
             InitNetwork();
             //optimizer.InitNetwork();
+            initializer.InitializeNetwork(filterBuffer, biasesBuffer);
         }
 
         public override void InitGpu(Accelerator device, Dictionary<string, string> Options = null)
@@ -94,55 +89,45 @@ namespace IanNet.IanNet.Layers
 
         public override void InitCpu()
         {
-            weights = new float[FilterShape.Width, FilterShape.Height];
-            
-            biases = new float[FilterShape.Width, FilterShape.Height];
             inputs = new float[InputShape.Width, InputShape.Height];
+            filter = new float[FilterShape.Width, FilterShape.Height];
+
             // assuming "valid" convolution
             NodeShape = new Shape2D(InputShape.Width - FilterShape.Width + 1, InputShape.Height - FilterShape.Height + 1);
             nodes = new float[NodeShape.Width, NodeShape.Height];
+            biases = new float[nodes.GetLength(0), nodes.GetLength(1)];
 
-            //weightsTransposed = new float[InputShape, NumberOfNodes];
-            //errors = new float[NumberOfNodes];
+            errors = new float[nodes.GetLength(0), nodes.GetLength(1)];
         }
 
-        public override void CompileKernels()
-        {
-            forwardKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>>(crossCorrelation);
-        }
-
-        public override void InitNetwork()
-        {
-            initializer.CompileKernels(device);
-            initializer.InitializeNetwork(weightsBuffer, biasesBuffer);
-        }
+        public override void InitNetwork() { }
 
         public override void Forward()
         {
             // run the kernels
-            forwardKernel(GetIndex2D(nodes), inputsBuffer, weightsBuffer, nodesBuffer);
+            convolutionKernel(GetIndex2D(nodes), inputsBuffer, filterBuffer, biasesBuffer, nodesBuffer);
             //activationKernel(nodes.Length, nodesBuffer);
         }
 
         /// <summary>
-        /// Not fully defined because I haven't gotten into the errors for CNNs yet
+        /// Calculate what portion of the error this layer is responsible for, take it out, and give the rest to the previous layer.
+        /// The new errors are passed into upstreamErrorsBuffer.
         /// </summary>
         public override void PassBackError()
         {
+            Console.WriteLine(GetErrors());
+            
             // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
             if (upstreamErrorsBuffer == null)
                 return;
 
-            //transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
-            //multiplyKernel(InputShape, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
+
+            // dL/dW = convolution(X, dL/dZ)
+            //convolutionKernel(GetIndex2D
         }
 
         /// <summary>
-        /// Not fully defined because I haven't gotten into the errors for CNNs yet
+        /// Use the error calculated from PassBackError and stored in errorsBuffer to update the weights.
         /// </summary>
         public override void BackPropogate()
         {
@@ -157,13 +142,13 @@ namespace IanNet.IanNet.Layers
 
         #region Get Data
 
-        public virtual float[,] GetWeights()
+        public virtual float[,] GetFilter()
         {
-            if (weightsBuffer == null)
+            if (filterBuffer == null)
                 return null;
 
-            weights = weightsBuffer.GetAsArray2D();
-            return weights;
+            filter = filterBuffer.GetAsArray2D();
+            return filter;
         }
 
         public virtual float[,] GetBiases()
@@ -202,15 +187,6 @@ namespace IanNet.IanNet.Layers
             return nodes;
         }
 
-        public override float[] GetErrors()
-        {
-            if (errorsBuffer == null)
-                return null;
-
-            errors = errorsBuffer.GetAsArray1D();
-            return errors;
-        }
-
         /// <summary>
         /// Returns the options object for the NEXT layer to use
         /// </summary>
@@ -226,28 +202,63 @@ namespace IanNet.IanNet.Layers
 
         #endregion
 
-        #region kernels
+        #region Buffers
+
+        // buffers
+        protected MemoryBuffer2D<float, Stride2D.DenseX> filterBuffer;
+
+        public virtual void InitBuffers(MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null)
+        {
+            // allocate memory on the gpu
+            if (inputsBuffer == null)
+                this.inputsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(inputs));
+            else
+                this.inputsBuffer = inputsBuffer;
+
+            filterBuffer = device.Allocate2DDenseX<float>(GetIndex2D(filter));
+            nodesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(nodes));
+            biasesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(biases));
+            errorsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(errors));
+        }
+
+        #endregion
+
+        #region Kernels
 
         public Action<
             Index2D, 
             ArrayView2D<float, Stride2D.DenseX>, 
             ArrayView2D<float, Stride2D.DenseX>, 
-            ArrayView2D<float, Stride2D.DenseX>> forwardKernel;
+            ArrayView2D<float, Stride2D.DenseX>, 
+            ArrayView2D<float, Stride2D.DenseX>> convolutionKernel;
 
-        // assuming "valid"
-        static void crossCorrelation(Index2D outputIndex, ArrayView2D<float, Stride2D.DenseX> input, ArrayView2D<float, Stride2D.DenseX> filter, ArrayView2D<float, Stride2D.DenseX> output)
+        public override void CompileKernels()
+        {
+            convolutionKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>>(convolution);
+        }
+
+        /// <summary>
+        /// Technically it's cross-correlation (convolution without flipping the filter). Assuming "valid" style.
+        /// </summary>
+        static void convolution(Index2D outputIndex, ArrayView2D<float, Stride2D.DenseX> input, ArrayView2D<float, Stride2D.DenseX> filter, ArrayView2D<float, Stride2D.DenseX> biases, ArrayView2D<float, Stride2D.DenseX> output)
         {
             output[outputIndex] = 0;
             for (int i = 0; i < filter.Extent.X; i++)
                 for (int j = 0; j < filter.Extent.Y; j++)
-                    output[outputIndex] += input[i + outputIndex.X, j + outputIndex.Y] * filter[i, j];
+                    output[outputIndex] += input[outputIndex.X + i, outputIndex.Y + j] * filter[i, j];
+            output[outputIndex] += biases[outputIndex];
         }
 
         #endregion
 
         public override string ToString()
         {
-            return $"2D Convolutional Layer with {NumberOfFilters} ( {FilterShape.Width}, {FilterShape.Height} ) filters. ";
+            return $"2D Convolutional Layer with 1 ( {FilterShape.Width}, {FilterShape.Height} ) filter. ";
         }
     }
 }

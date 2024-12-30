@@ -9,9 +9,9 @@ namespace IanNet.IanNet.DataProcessing
     /// <summary>
     /// For when you are giving the input layer the float[] and want it to pass through unchanged.
     /// </summary>
-    public class FloatArrayPreprocessing : IPreprocessing<float[]>
+    public class FloatArrayPreprocessing2D : IPreprocessing2D<float[,]>
     {
-        public float[] Preprocess(float[] data)
+        public float[,] Preprocess(float[,] data)
         {
             return data;
         }

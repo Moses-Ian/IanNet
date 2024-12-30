@@ -48,10 +48,25 @@ namespace IanNet.IanNet.Measurement
 
                 Net.Forward(input, returnResult: false);
 
-                float[] values = Net.Layers.Last().GetErrors();
+                Array values = Net.Layers.Last().GetErrors();
 
-                foreach (var error in Net.Layers.Last().GetErrors())
-                    loss += Math.Abs(error);
+                if (values is float[])
+                {
+                    foreach (var error in Net.Layers.Last().GetErrors() as float[])
+                        loss += Math.Abs(error);
+                }
+                else if (values is float[,])
+                {
+                    var errors = Net.Layers.Last().GetErrors() as float[,];
+                    for (int i = 0; i < errors.GetLength(0); i++)
+                        for (int j = 0; j < errors.GetLength(1); j++)
+                            loss += Math.Abs(errors[i, j]);
+                }
+                else
+                {
+                    throw new Exception("Layer errors are of a non-compatible shape");
+                }
+
             }
 
             return loss;
