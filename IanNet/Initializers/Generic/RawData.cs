@@ -12,7 +12,9 @@ namespace IanNet.IanNet.Initializers
     /// Implements every version of IInitializer so that it's easy to use
     /// </summary>
     public class RawData : IInitializer1D,
+                           IInitializer1DS,
                            IInitializer2D,
+                           IInitializer2DS,
                            IInitializer2D1D
     {
         public Array initialWeights;
@@ -22,6 +24,12 @@ namespace IanNet.IanNet.Initializers
         {
             this.initialWeights = initialWeights;
             this.initialBiases = initialBiases;
+        }
+
+        public RawData(Array initialWeights, float initialBias) 
+        {
+            this.initialWeights = initialWeights;
+            this.initialBiases = new float[] { initialBias };
         }
 
         public void CompileKernels(Accelerator device) { }

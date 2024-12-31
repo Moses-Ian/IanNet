@@ -1,4 +1,9 @@
-﻿using System;
+﻿// The next step is do backpropogation. it should be as simple as convolving the inputs with the errors
+// The next step is to create a 2D sum algorithm and use it to update the bias
+// Need to update the upstreamErrorsBuffer
+// Learning Rate?
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,12 +14,15 @@ using ILGPU.Runtime.Cuda;
 using IanNet.IanNet.Optimizers;
 using IanNet.Helpers;
 using System.ComponentModel.Design;
+using IanNet.IanNet.Initializers;
+using IanNet.IanNet.Exceptions;
 
 namespace IanNet.IanNet.Layers
 {
     /// <summary>
-    /// This is meant to be a generic layer, but it's implemented as a convolutional layer. This version has exactly 1 filter.
+    /// Convolutional layer with exactly 1 filter.
     /// </summary>
+    /// <see>IanNet\Docs\Images\ConvolutionalLayerBackpropogation.png</see>
     public partial class Conv2D : Layer2D
     {
         // metadata
@@ -27,15 +35,18 @@ namespace IanNet.IanNet.Layers
         Random random = new Random();
         public float gradientClip = 0.1f;
         IOptimizer1D optimizer;
+        IInitializer2DS initializer;
 
         // core data
         public float[,] filter;
+        public float bias;
         public Shape2D InputShape;
         public Shape2D NodeShape;
         public Dictionary<string, string> Options;
         public Shape2D FilterShape;
 
-        
+        // derived data
+        public float[,] filterGradient;
 
         public Conv2D(Shape2D FilterShape, IOptimizer1D optimizer = null)
             : base(NodeShape: null) // we need to know the size of the input to determine the size of the output
@@ -72,7 +83,7 @@ namespace IanNet.IanNet.Layers
 
             InitNetwork();
             //optimizer.InitNetwork();
-            initializer.InitializeNetwork(filterBuffer, biasesBuffer);
+            initializer.InitializeNetwork(filterBuffer, biasBuffer);
         }
 
         public override void InitGpu(Accelerator device, Dictionary<string, string> Options = null)
@@ -91,6 +102,7 @@ namespace IanNet.IanNet.Layers
         {
             inputs = new float[InputShape.Width, InputShape.Height];
             filter = new float[FilterShape.Width, FilterShape.Height];
+            filterGradient = new float[FilterShape.Width, FilterShape.Height];
 
             // assuming "valid" convolution
             NodeShape = new Shape2D(InputShape.Width - FilterShape.Width + 1, InputShape.Height - FilterShape.Height + 1);
@@ -105,7 +117,7 @@ namespace IanNet.IanNet.Layers
         public override void Forward()
         {
             // run the kernels
-            convolutionKernel(GetIndex2D(nodes), inputsBuffer, filterBuffer, biasesBuffer, nodesBuffer);
+            convolutionWithBiasKernel(GetIndex2D(nodes), inputsBuffer, filterBuffer, biasBuffer, nodesBuffer);
             //activationKernel(nodes.Length, nodesBuffer);
         }
 
@@ -121,9 +133,7 @@ namespace IanNet.IanNet.Layers
             if (upstreamErrorsBuffer == null)
                 return;
 
-
-            // dL/dW = convolution(X, dL/dZ)
-            //convolutionKernel(GetIndex2D
+            passBackError(GetIndex2D(errors), errorsBuffer, upstreamErrorsBuffer);
         }
 
         /// <summary>
@@ -131,13 +141,20 @@ namespace IanNet.IanNet.Layers
         /// </summary>
         public override void BackPropogate()
         {
-            // optimizer.BackPropogate();
+            // dL/dW = convolution(X, dL/dZ)
+            convolutionKernel(GetIndex2D(errors), inputsBuffer, errorsBuffer, filterGradientBuffer);
+            updateBiasKernel(GetIndex2D(errors), errorsBuffer, biasBuffer);
         }
 
         public void SetOptimizer(IOptimizer1D optimizer)
         {
             this.optimizer = optimizer;
             //optimizer.SetSize(InputShape, NumberOfNodes);
+        }
+
+        public void SetInitializer(IInitializer2DS initializer)
+        {
+            this.initializer = initializer;
         }
 
         #region Get Data
@@ -151,13 +168,13 @@ namespace IanNet.IanNet.Layers
             return filter;
         }
 
-        public virtual float[,] GetBiases()
+        public virtual float GetBias()
         {
-            if (biasesBuffer == null)
-                return null;
+            if (biasBuffer == null)
+                return float.NaN;
 
-            biases = biasesBuffer.GetAsArray2D();
-            return biases;
+            bias = biasBuffer.GetAsArray1D()[0];
+            return bias;
         }
 
         public virtual float[,] GetInputs()
@@ -206,6 +223,8 @@ namespace IanNet.IanNet.Layers
 
         // buffers
         protected MemoryBuffer2D<float, Stride2D.DenseX> filterBuffer;
+        protected MemoryBuffer2D<float, Stride2D.DenseX> filterGradientBuffer;
+        protected MemoryBuffer1D<float, Stride1D.Dense> biasBuffer;
 
         public virtual void InitBuffers(MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null)
         {
@@ -216,8 +235,9 @@ namespace IanNet.IanNet.Layers
                 this.inputsBuffer = inputsBuffer;
 
             filterBuffer = device.Allocate2DDenseX<float>(GetIndex2D(filter));
+            filterGradientBuffer = device.Allocate2DDenseX<float>(GetIndex2D(filter));
             nodesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(nodes));
-            biasesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(biases));
+            biasBuffer = device.Allocate1D<float>(1);
             errorsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(errors));
         }
 
@@ -229,8 +249,21 @@ namespace IanNet.IanNet.Layers
             Index2D, 
             ArrayView2D<float, Stride2D.DenseX>, 
             ArrayView2D<float, Stride2D.DenseX>, 
-            ArrayView2D<float, Stride2D.DenseX>, 
             ArrayView2D<float, Stride2D.DenseX>> convolutionKernel;
+        public Action<
+            Index2D, 
+            ArrayView2D<float, Stride2D.DenseX>, 
+            ArrayView2D<float, Stride2D.DenseX>, 
+            ArrayView1D<float, Stride1D.Dense>, 
+            ArrayView2D<float, Stride2D.DenseX>> convolutionWithBiasKernel;
+        public Action<
+            Index2D, 
+            ArrayView2D<float, Stride2D.DenseX>, 
+            ArrayView1D<float, Stride1D.Dense>> updateBiasKernel;
+        public Action<
+            Index2D, 
+            ArrayView2D<float, Stride2D.DenseX>, 
+            ArrayView2D<float, Stride2D.DenseX>> passBackErrorKernel;
 
         public override void CompileKernels()
         {
@@ -238,20 +271,61 @@ namespace IanNet.IanNet.Layers
                 Index2D,
                 ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView2D<float, Stride2D.DenseX>>(convolution);
+            convolutionWithBiasKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView2D<float, Stride2D.DenseX>>(convolutionWithBias);
+            updateBiasKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView1D<float, Stride1D.Dense>>(updateBias);
+            passBackErrorKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>>(passBackError);
         }
 
         /// <summary>
         /// Technically it's cross-correlation (convolution without flipping the filter). Assuming "valid" style.
         /// </summary>
-        static void convolution(Index2D outputIndex, ArrayView2D<float, Stride2D.DenseX> input, ArrayView2D<float, Stride2D.DenseX> filter, ArrayView2D<float, Stride2D.DenseX> biases, ArrayView2D<float, Stride2D.DenseX> output)
+        static void convolution(Index2D outputIndex, ArrayView2D<float, Stride2D.DenseX> input, ArrayView2D<float, Stride2D.DenseX> filter, ArrayView2D<float, Stride2D.DenseX> output)
         {
             output[outputIndex] = 0;
             for (int i = 0; i < filter.Extent.X; i++)
                 for (int j = 0; j < filter.Extent.Y; j++)
                     output[outputIndex] += input[outputIndex.X + i, outputIndex.Y + j] * filter[i, j];
-            output[outputIndex] += biases[outputIndex];
+        }
+
+        /// <summary>
+        /// Technically it's cross-correlation (convolution without flipping the filter). Assuming "valid" style.
+        /// </summary>
+        /// <param name="biases">A 1D array of length 1</param>
+        static void convolutionWithBias(Index2D outputIndex, ArrayView2D<float, Stride2D.DenseX> input, ArrayView2D<float, Stride2D.DenseX> filter, ArrayView1D<float, Stride1D.Dense> bias, ArrayView2D<float, Stride2D.DenseX> output)
+        {
+            output[outputIndex] = 0;
+            for (int i = 0; i < filter.Extent.X; i++)
+                for (int j = 0; j < filter.Extent.Y; j++)
+                    output[outputIndex] += input[outputIndex.X + i, outputIndex.Y + j] * filter[i, j];
+            output[outputIndex] += bias[0];
+        }
+
+        static void updateBias(Index2D index, ArrayView2D<float, Stride2D.DenseX> errors, ArrayView1D<float, Stride1D.Dense> bias)
+        {
+            // sum up the errors
+            float result = 0;
+            Group.Barrier();
+
+            // update the bias
+            if (index.X == 0 && index.Y == 0)
+                bias[0] = result;
+        }
+
+        static void passBackError(Index2D index, ArrayView2D<float, Stride2D.DenseX> errors, ArrayView2D<float, Stride2D.DenseX> upstreamErrorsBuffer)
+        {
+            // do something
         }
 
         #endregion
@@ -260,5 +334,17 @@ namespace IanNet.IanNet.Layers
         {
             return $"2D Convolutional Layer with 1 ( {FilterShape.Width}, {FilterShape.Height} ) filter. ";
         }
+
+        #region Fuckery
+
+        /// <summary>
+        /// Wrong one. Use IInitializer2DS.
+        /// </summary>
+        public override void SetInitializer(IInitializer2D initializer)
+        {
+            throw new IncorrectInitializerException(Name, "Initializer2DS", "IInitializer2D");
+        }
+
+        #endregion
     }
 }

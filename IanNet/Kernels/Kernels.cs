@@ -332,7 +332,7 @@ namespace IanNet.IanNet.Kernel
         /// The result is an array where each element k is the sum of all elements 0 through k.
         /// If the array size exceeds the group size, this will return the wrong result.
         /// </summary>
-        public static void total1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> result)
+        public static void sum1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> result)
         {
             result[index] = A[index];
             Group.Barrier();
@@ -345,6 +345,16 @@ namespace IanNet.IanNet.Kernel
                 // wait until every thread gets through this iteration
                 Group.Barrier();
             }
+        }
+
+        /// <summary>
+        /// Adds up all of the numbers in an array. 
+        /// The result is an array where each element k is the sum of all elements 0 through k.
+        /// If the array size exceeds the group size, this will return the wrong result.
+        /// </summary>
+        public static void sum2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView1D<float, Stride1D.Dense> result)
+        {
+            // do something
         }
 
         /// <summary>

@@ -136,7 +136,7 @@ namespace IanNet.IanNet.Layers
             //optimizer.SetSize(InputShape, NumberOfNodes);
         }
 
-        public void SetInitializer(IInitializer2D initializer)
+        public virtual void SetInitializer(IInitializer2D initializer)
         {
             this.initializer = initializer;
         }
