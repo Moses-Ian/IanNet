@@ -73,6 +73,11 @@ namespace IanNet.IanNet.Layers
             return targetsBuffer;
         }
 
+        public override MemoryBuffer GetUpstreamErrorsBuffer()
+        {
+            return upstreamErrorsBuffer;
+        }
+
         #endregion
 
         #region Set Buffers

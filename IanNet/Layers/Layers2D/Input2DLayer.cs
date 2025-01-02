@@ -49,18 +49,16 @@ namespace IanNet.IanNet.Layers
             InitNetwork();
         }
 
-        public override void InitCpu()
-        {
-            inputs = new float[InputShape.Width, InputShape.Height];
-            nodes = inputs;
-        }
+        public override void InitCpu() { }
 
         public override void InitBuffers(MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null)
         {
             if (inputsBuffer == null)
-                this.inputsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(inputs));
+                this.inputsBuffer = device.Allocate2DDenseX<float>(InputShape.ToIndex2D());
             else
                 this.inputsBuffer = inputsBuffer;
+
+            errorsBuffer = device.Allocate2DDenseX<float>(InputShape.ToIndex2D());
         }
 
         public override void InitNetwork()

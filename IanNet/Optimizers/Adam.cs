@@ -13,6 +13,9 @@ namespace IanNet.IanNet.Optimizers
 {
     public class Adam : IOptimizer1D
     {
+        public readonly string defaultName = "Adam";
+        public string Name;
+
         // gpu things
         public Accelerator device;
 
@@ -87,6 +90,8 @@ namespace IanNet.IanNet.Optimizers
             this.learningRate = learningRate;
             this.beta1 = beta1;
             this.beta2 = beta2;
+
+            Name = defaultName;
         }
 
         public void BackPropogate()
@@ -94,29 +99,15 @@ namespace IanNet.IanNet.Optimizers
             #region Weights
 
             // calculate gradient
-            //Console.WriteLine("old weights:");
-            float[,] oldWeights = GetWeights();
-            //Console.WriteLine(oldWeights);
+            Console.WriteLine(NumberOfNodes);
+            Console.WriteLine(nodesBuffer);
+            Console.WriteLine(tempBuffer);
+            Console.WriteLine(gradientKernel);
             gradientKernel(NumberOfNodes, nodesBuffer, tempBuffer);    // this gives us the unactivated output
             elementMultiplyKernel(NumberOfNodes, errorsBuffer, tempBuffer, tempBuffer); // this gives us scaled errors
             vectorMultiplyKernel(size, tempBuffer, inputsBuffer, gradientsBuffer);
 
             adam2DKernel(size, learningRate, beta1, beta2, epsilon, gradientsBuffer, mBuffer, vBuffer, weightsBuffer);
-
-            //Console.WriteLine("new weights:");
-            float[,] newWeights = GetWeights();
-            //Console.WriteLine(newWeights);
-
-            bool same = true;
-            for (int i = 0; i < oldWeights.GetLength(0); i++)
-                for (int j = 0; j < oldWeights.GetLength(1); j++)
-                    if (oldWeights[i, j] != newWeights[i, j])
-                    {
-                        same = false;
-                        break;
-                    }
-            //Console.WriteLine($"The weights are {(same ? "the same" : "different")}");
-
 
             #endregion
 
@@ -188,6 +179,9 @@ namespace IanNet.IanNet.Optimizers
 
         public void CompileKernels()
         {
+            if (IActivation == null)
+                throw new Exception($"{Name} has a null IActivation.");
+
             gradientKernel = device.LoadAutoGroupedStreamKernel(IActivation.Reverse);
             elementMultiplyKernel = device.LoadAutoGroupedStreamKernel<
                 Index1D,

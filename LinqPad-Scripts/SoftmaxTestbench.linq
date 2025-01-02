@@ -60,11 +60,12 @@ class Program
 		var net = new Net();
 		
 		var inputLayer = new Input1DLayer<float[]>(3);
+		inputLayer.SetProcessing(new FloatArrayPreprocessing1D());
 		
 		var softmaxLayer = new Softmax1D();
 		
 		var outputLayer = new Output1DLayer<float[]>(3);
-		outputLayer.SetProcessing(new FloatArrayProcessing());
+		outputLayer.SetProcessing(new FloatArrayProcessing1D());
 		
 		net.AddLayer(inputLayer);
 		net.AddLayer(softmaxLayer);

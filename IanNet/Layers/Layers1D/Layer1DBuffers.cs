@@ -35,12 +35,12 @@ namespace IanNet.IanNet.Layers
 
             // this is a buffer for holding transient data
             // as an optimization, other buffers will have other names but will point to this
-            transientBuffer = device.Allocate1D<float>(nodes.Length);
+            transientBuffer = device.Allocate1D<float>(NumberOfNodes);
 
-            weightsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(weights));
-            weightsTransposedBuffer = device.Allocate2DDenseX<float>(new Index2D(weights.GetLength(1), weights.GetLength(0)));
-            biasesBuffer = device.Allocate1D<float>(biases.Length);
-            nodesBuffer = device.Allocate1D<float>(nodes.Length);
+            weightsBuffer = device.Allocate2DDenseX<float>(WeightsShape.ToIndex2D());
+            weightsTransposedBuffer = device.Allocate2DDenseX<float>(WeightsShape.ToIndex2D());
+            biasesBuffer = device.Allocate1D<float>(NumberOfNodes);
+            nodesBuffer = device.Allocate1D<float>(NumberOfNodes);
             errorsBuffer = transientBuffer;
         }
 
@@ -64,6 +64,11 @@ namespace IanNet.IanNet.Layers
         public override MemoryBuffer GetErrorsBuffer()
         {
             return errorsBuffer;
+        }
+
+        public override MemoryBuffer GetUpstreamErrorsBuffer()
+        {
+            return upstreamErrorsBuffer;
         }
 
         #endregion

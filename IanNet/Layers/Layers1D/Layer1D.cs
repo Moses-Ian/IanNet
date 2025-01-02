@@ -9,6 +9,7 @@ using ILGPU.Runtime.Cuda;
 using IanNet.IanNet.Optimizers;
 using IanNet.IanNet.Activation;
 using IanNet.IanNet.Initializers;
+using IanNet.Helpers;
 
 namespace IanNet.IanNet.Layers
 {
@@ -36,11 +37,13 @@ namespace IanNet.IanNet.Layers
         public float[] nodes;
         public int NumberOfInputs;
         public int NumberOfNodes;
+        public Shape2D WeightsShape;
         public Dictionary<string, string> Options;
 
         // derived data
         public float[,] weightsTransposed;
         public float[] errors;
+        public float[] upstreamErrors;
 
         public Layer1D(int NumberOfNodes = 0, IOptimizer1D optimizer = null)
         {
@@ -87,26 +90,20 @@ namespace IanNet.IanNet.Layers
 
         public virtual void InitCpu()
         {
-            weights = new float[NumberOfNodes, NumberOfInputs];
-            biases = new float[NumberOfNodes];
-            inputs = new float[NumberOfInputs];
-            nodes = new float[NumberOfNodes];
-
-            weightsTransposed = new float[NumberOfInputs, NumberOfNodes];
-            errors = new float[NumberOfNodes];
+            WeightsShape = new Shape2D(NumberOfNodes, NumberOfInputs);
         }
 
         public virtual void InitNetwork()
         {
-            fillRandom2DKernel(GetIndex2D(weights), weightsBuffer, random.NextInt64());
-            fillRandom1DKernel(biases.Length, biasesBuffer, random.NextInt64());
+            fillRandom2DKernel(weightsBuffer.IntExtent, weightsBuffer, random.NextInt64());
+            fillRandom1DKernel(biasesBuffer.IntExtent, biasesBuffer, random.NextInt64());
         }
 
         public override void Forward()
         {
             // run the kernels
-            forwardKernel(nodes.Length, inputsBuffer, weightsBuffer, biasesBuffer, nodesBuffer);
-            activationKernel(nodes.Length, nodesBuffer);
+            forwardKernel(nodesBuffer.IntExtent, inputsBuffer, weightsBuffer, biasesBuffer, nodesBuffer);
+            activationKernel(nodesBuffer.IntExtent, nodesBuffer);
         }
 
         /// <summary>
@@ -115,11 +112,10 @@ namespace IanNet.IanNet.Layers
         /// </summary>
         public override void PassBackError()
         {
-            // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
             if (upstreamErrorsBuffer == null)
                 return;
 
-            transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
+            transposeKernel(weightsTransposedBuffer.IntExtent, weightsBuffer, weightsTransposedBuffer);
             multiplyKernel(NumberOfInputs, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
         }
 
@@ -203,6 +199,15 @@ namespace IanNet.IanNet.Layers
 
             errors = errorsBuffer.GetAsArray1D();
             return errors;
+        }
+
+        public override float[] GetUpstreamErrors()
+        {
+            if (upstreamErrorsBuffer == null)
+                return null;
+
+            upstreamErrors = upstreamErrorsBuffer.GetAsArray1D();
+            return upstreamErrors;
         }
 
         public override List<KeyValuePair<string, string>> GetOptionsInfo()

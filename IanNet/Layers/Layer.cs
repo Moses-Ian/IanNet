@@ -17,6 +17,7 @@ namespace IanNet.IanNet.Layers
         public abstract List<KeyValuePair<string, string>> GetOptionsInfo();
         public abstract MemoryBuffer GetNodesBuffer();
         public abstract void SetUpstreamErrorsBuffer(MemoryBuffer upstreamErrorsBuffer);
+        public abstract MemoryBuffer GetUpstreamErrorsBuffer();
         public abstract MemoryBuffer GetErrorsBuffer();
         public abstract void Load(object input);
         public abstract void Forward();
@@ -29,6 +30,7 @@ namespace IanNet.IanNet.Layers
         public abstract Array GetInputs();
         public abstract Array GetWeights();
         public abstract Array GetNodes();
+        public abstract Array GetUpstreamErrors();
         public string Name { get; set; }
     }
 }

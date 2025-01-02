@@ -70,10 +70,6 @@ namespace IanNet.IanNet.Layers
         public override void InitCpu()
         {
             NumberOfNodes = NumberOfInputs;
-
-            inputs = new float[NumberOfInputs];
-            nodes = new float[NumberOfNodes];
-            jacobian = new float[NumberOfNodes, NumberOfNodes];
         }
 
         /// <exception cref="ArgumentNullException"></exception>
@@ -87,10 +83,10 @@ namespace IanNet.IanNet.Layers
                 throw new ArgumentException("inputsBuffer must be of type MemoryBuffer1D<float, Stride1D.Dense>");
 
             this.inputsBuffer = inputsBuffer as MemoryBuffer1D<float, Stride1D.Dense>;
-            nodesBuffer = device.Allocate1D(nodes);
-            transientBuffer = device.Allocate1D<float>(nodes.Length);
-            jacobianBuffer = device.Allocate2DDenseX<float>(GetIndex2D(jacobian));
-            errorsBuffer = device.Allocate1D<float>(nodes.Length);
+            nodesBuffer = device.Allocate1D<float>(NumberOfNodes);
+            transientBuffer = device.Allocate1D<float>(NumberOfNodes);
+            jacobianBuffer = device.Allocate2DDenseX<float>(new Index2D(NumberOfNodes, NumberOfNodes));
+            errorsBuffer = device.Allocate1D<float>(NumberOfNodes);
         }
 
         public override void CompileKernels()
@@ -115,13 +111,13 @@ namespace IanNet.IanNet.Layers
 
         public override void Forward()
         {
-            softmaxKernel(nodes.Length, inputsBuffer, transientBuffer, nodesBuffer);
+            softmaxKernel(nodesBuffer.IntExtent, inputsBuffer, transientBuffer, nodesBuffer);
         }
 
         public override void PassBackError()
         {
-            softmaxPrimeKernel(GetIndex2D(jacobian), nodesBuffer, jacobianBuffer);
-            multiplyKernel(nodes.Length, jacobianBuffer, errorsBuffer, upstreamErrorsBuffer);
+            softmaxPrimeKernel(jacobianBuffer.IntExtent, nodesBuffer, jacobianBuffer);
+            multiplyKernel(nodesBuffer.IntExtent, jacobianBuffer, errorsBuffer, upstreamErrorsBuffer);
         }
 
         public override void BackPropogate() { }

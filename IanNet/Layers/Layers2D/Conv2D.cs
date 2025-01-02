@@ -1,6 +1,5 @@
 ﻿// The next step is do backpropogation. it should be as simple as convolving the inputs with the errors
 // The next step is to create a 2D sum algorithm and use it to update the bias
-// Need to update the upstreamErrorsBuffer
 // Learning Rate?
 
 using System;
@@ -100,16 +99,7 @@ namespace IanNet.IanNet.Layers
 
         public override void InitCpu()
         {
-            inputs = new float[InputShape.Width, InputShape.Height];
-            filter = new float[FilterShape.Width, FilterShape.Height];
-            filterGradient = new float[FilterShape.Width, FilterShape.Height];
-
-            // assuming "valid" convolution
             NodeShape = new Shape2D(InputShape.Width - FilterShape.Width + 1, InputShape.Height - FilterShape.Height + 1);
-            nodes = new float[NodeShape.Width, NodeShape.Height];
-            biases = new float[nodes.GetLength(0), nodes.GetLength(1)];
-
-            errors = new float[nodes.GetLength(0), nodes.GetLength(1)];
         }
 
         public override void InitNetwork() { }
@@ -127,13 +117,11 @@ namespace IanNet.IanNet.Layers
         /// </summary>
         public override void PassBackError()
         {
-            Console.WriteLine(GetErrors());
-            
             // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
             if (upstreamErrorsBuffer == null)
                 return;
-
-            passBackError(GetIndex2D(errors), errorsBuffer, upstreamErrorsBuffer);
+            
+            passBackErrorKernel(upstreamErrorsBuffer.IntExtent, errorsBuffer, filterBuffer, upstreamErrorsBuffer);
         }
 
         /// <summary>
@@ -230,15 +218,15 @@ namespace IanNet.IanNet.Layers
         {
             // allocate memory on the gpu
             if (inputsBuffer == null)
-                this.inputsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(inputs));
+                this.inputsBuffer = device.Allocate2DDenseX<float>(InputShape.ToIndex2D());
             else
                 this.inputsBuffer = inputsBuffer;
 
-            filterBuffer = device.Allocate2DDenseX<float>(GetIndex2D(filter));
-            filterGradientBuffer = device.Allocate2DDenseX<float>(GetIndex2D(filter));
-            nodesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(nodes));
+            filterBuffer = device.Allocate2DDenseX<float>(FilterShape.ToIndex2D());
+            filterGradientBuffer = device.Allocate2DDenseX<float>(FilterShape.ToIndex2D());
+            nodesBuffer = device.Allocate2DDenseX<float>(NodeShape.ToIndex2D());
             biasBuffer = device.Allocate1D<float>(1);
-            errorsBuffer = device.Allocate2DDenseX<float>(GetIndex2D(errors));
+            errorsBuffer = device.Allocate2DDenseX<float>(NodeShape.ToIndex2D());
         }
 
         #endregion
@@ -263,6 +251,7 @@ namespace IanNet.IanNet.Layers
         public Action<
             Index2D, 
             ArrayView2D<float, Stride2D.DenseX>, 
+            ArrayView2D<float, Stride2D.DenseX>, 
             ArrayView2D<float, Stride2D.DenseX>> passBackErrorKernel;
 
         public override void CompileKernels()
@@ -284,6 +273,7 @@ namespace IanNet.IanNet.Layers
                 ArrayView1D<float, Stride1D.Dense>>(updateBias);
             passBackErrorKernel = device.LoadAutoGroupedStreamKernel<
                 Index2D,
+                ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView2D<float, Stride2D.DenseX>,
                 ArrayView2D<float, Stride2D.DenseX>>(passBackError);
         }
@@ -323,9 +313,17 @@ namespace IanNet.IanNet.Layers
                 bias[0] = result;
         }
 
-        static void passBackError(Index2D index, ArrayView2D<float, Stride2D.DenseX> errors, ArrayView2D<float, Stride2D.DenseX> upstreamErrorsBuffer)
+        static void passBackError(Index2D index, ArrayView2D<float, Stride2D.DenseX> errors, ArrayView2D<float, Stride2D.DenseX> filter, ArrayView2D<float, Stride2D.DenseX> upstreamErrors)
         {
-            // do something
+            upstreamErrors[index] = 0f;
+            for (int i = 0; i < filter.Extent.X; i++)
+                for (int j = 0; j < filter.Extent.Y; j++)
+                {
+                    var x = -filter.Extent.X + 1 + i + index.X;
+                    var y = -filter.Extent.Y + 1 + j + index.Y;
+                    if (x >= 0 && x < errors.Extent.X && y >= 0 && y < errors.Extent.Y)
+                        upstreamErrors[index] += errors[x, y] * filter[i, j];
+                }
         }
 
         #endregion

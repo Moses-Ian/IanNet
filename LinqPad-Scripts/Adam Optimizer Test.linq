@@ -16,6 +16,7 @@
   <Namespace>Emgu.CV.Structure</Namespace>
   <Namespace>IanNet</Namespace>
   <Namespace>IanNet.IanNet</Namespace>
+  <Namespace>IanNet.IanNet.Activation</Namespace>
   <Namespace>IanNet.IanNet.Batch</Namespace>
   <Namespace>IanNet.IanNet.Layers</Namespace>
   <Namespace>IanNet.IanNet.Optimizers</Namespace>
@@ -25,6 +26,8 @@
   <Namespace>ILGPU.Runtime.Cuda</Namespace>
   <Namespace>System.Drawing</Namespace>
 </Query>
+
+// I think this test is broken
 
 void Main()
 {
@@ -46,14 +49,14 @@ void Main()
 	
 	#region Buffers
 	
-	//MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer = device.Allocate1D<float>(NumberOfNodes);
+	MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer = device.Allocate1D<float>(2);
 	MemoryBuffer1D<float, Stride1D.Dense> errorsBuffer = device.Allocate1D<float>(errors.Length);
 	MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer = device.Allocate1D<float>(inputs.Length);
 	MemoryBuffer2D<float, Stride2D.DenseX> weightsBuffer = device.Allocate2DDenseX<float>(new Index2D(theta.GetLength(0), theta.GetLength(1)));
-	//MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer = device.Allocate1D<float>(NumberOfNodes);
+	MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer = device.Allocate1D<float>(2);
 	
 	weightsBuffer.CopyFromCPU(theta);
-	//nodesBuffer.CopyFromCPU(new float[] {0});
+	nodesBuffer.CopyFromCPU(new float[] {0});
 	errorsBuffer.CopyFromCPU(errors);
 	inputsBuffer.CopyFromCPU(inputs);
 	
@@ -62,11 +65,12 @@ void Main()
 	adam.InitGpu(device);
 	adam.SetSize(inputs.Length, errors.Length);
 	adam.InitBuffers();
-	//adam.SetNodesBuffer(nodesBuffer);
+	adam.SetNodesBuffer(nodesBuffer);
 	adam.SetErrorsBuffer(errorsBuffer);
 	adam.SetInputsBuffer(inputsBuffer);
 	adam.SetWeightsBuffer(weightsBuffer);
-	//adam.SetBiasesBuffer(biasesBuffer);
+	adam.SetBiasesBuffer(biasesBuffer);
+	adam.SetActivation(new None1D());
 	adam.CompileKernels();
 	// init network?
 	

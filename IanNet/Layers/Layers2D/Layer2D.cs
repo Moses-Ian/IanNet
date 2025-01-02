@@ -37,6 +37,7 @@ namespace IanNet.IanNet.Layers
         // derived data
         public float[,] weightsTransposed;
         public float[,] errors;
+        public float[,] upstreamErrors;
 
         public Layer2D(Shape2D NodeShape = null, IOptimizer2D optimizer = null)
         {
@@ -107,13 +108,6 @@ namespace IanNet.IanNet.Layers
             //forwardKernel(nodes.Length, inputsBuffer, weightsBuffer, biasesBuffer, nodesBuffer);
             //activationKernel(nodes.Length, nodesBuffer);
         }
-
-        //public virtual void Forward(MemoryBuffer2D<float, Stride2D.DenseX> inputBatch, int index)
-        //{
-        //    // run the kernels
-        //    //forwardBatchKernel(nodes.Length, inputBatch, index, weightsBuffer, biasesBuffer, nodesBuffer);
-        //    //activationKernel(nodes.Length, nodesBuffer);
-        //}
 
         public override void PassBackError()
         {
@@ -201,6 +195,15 @@ namespace IanNet.IanNet.Layers
 
             errors = errorsBuffer.GetAsArray2D();
             return errors;
+        }
+
+        public override float[,] GetUpstreamErrors()
+        {
+            if (upstreamErrorsBuffer == null)
+                return null;
+
+            var upstreamErrors = upstreamErrorsBuffer.GetAsArray2D();
+            return upstreamErrors;
         }
 
         public override List<KeyValuePair<string, string>> GetOptionsInfo()

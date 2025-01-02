@@ -31,7 +31,39 @@ class Program
 {
     static void Main()
     {
-        var Net = MakeTheNetwork();
+		#region Test 1
+        //var Net = MakeTheNetwork();
+		//
+		//Net.Compile();
+		//Console.WriteLine("Compiled Successfully");
+		//Console.WriteLine(Net.ToString());
+		//
+		//var convLayer = Net.Layers[1] as Conv2D;
+		//
+		//var inputs = new float[,] 
+		//{
+		//	{0, 0, 1, 1, 0, 0},
+		//	{0, 1, 0, 0, 1, 0},
+		//	{1, 0, 0, 0, 0, 1},
+		//	{1, 0, 0, 0, 0, 1},
+		//	{0, 1, 0, 0, 1, 0},
+		//	{0, 0, 1, 1, 0, 0},
+		//};
+		//Console.WriteLine(inputs);
+		//var target = new float[,] 
+		//{ 
+		//	{1, -1, -2, -1},
+		//	{-1, -2, -1, -2},
+		//	{-2, -1, -2, -1},
+		//	{-1, -2, -1, 1},
+		//};
+		//Console.WriteLine(convLayer.GetFilter());
+		//var outputs = Net.Forward(inputs);
+		//Console.WriteLine(outputs);
+		#endregion
+		
+		#region Test 2
+		var Net = MakeTheNetwork2();
 		
 		Net.Compile();
 		Console.WriteLine("Compiled Successfully");
@@ -39,39 +71,29 @@ class Program
 		
 		var convLayer = Net.Layers[1] as Conv2D;
 		
+		float[,] errors = new float[,]
+		{
+			{1, 2},
+			{3, 4},
+		};
+		var errorsBuffer = convLayer.GetErrorsBuffer() as MemoryBuffer2D<float, Stride2D.DenseX>;
+		errorsBuffer.CopyFromCPU(errors);
+		
+		Console.WriteLine(convLayer.GetErrors());
 		Console.WriteLine(convLayer.GetFilter());
 		
-		var inputs = new float[,] 
+		convLayer.PassBackError();
+		Console.WriteLine(convLayer.GetUpstreamErrors());
+		float[,] target = new float[,]
 		{
-			{0, 0, 1, 1, 0, 0},
-			{0, 1, 0, 0, 1, 0},
-			{1, 0, 0, 0, 0, 1},
-			{1, 0, 0, 0, 0, 1},
-			{0, 1, 0, 0, 1, 0},
-			{0, 0, 1, 1, 0, 0},
+			{ .4f, 1.10f,  .6f},
+			{1.4f, 3.00f, 1.4f},
+			{ .6f,  .11f,  .4f},
 		};
-		var target = new float[,] 
-		{ 
-			{1, -1, -2, -1},
-			{-1, -2, -1, -2},
-			{-2, -1, -2, -1},
-			{-1, -2, -1, 1},
-		};
+		Console.WriteLine("Target:");
+		Console.WriteLine(target);
 		
-		var outputs = Net.Forward(inputs);
-		Console.WriteLine(outputs);
-		
-		//var inputLayer = Net.Layers[0];
-		//var softmaxLayer = Net.Layers[1] as Softmax1D;
-		//var outputLayer = Net.Layers[2] as Output1DLayer<float[]>;
-		//
-		//Net.LoadTarget(target);
-		//Net.CalculateError();
-		//Net.PassBackError();
-		//Console.WriteLine(softmaxLayer.GetJacobian());
-		//Console.WriteLine(softmaxLayer.GetErrors());
-		//Net.BackPropogate();
-		//Console.WriteLine(inputLayer.GetErrors());
+		#endregion
     }
 	
 	public static Net MakeTheNetwork()
@@ -88,13 +110,7 @@ class Program
 			{0, 1, 0},
 			{1, 0, 0},
 		};
-		var bias = new float[,]
-		{
-			{ -2, -2, -2, -2},
-			{ -2, -2, -2, -2},
-			{ -2, -2, -2, -2},
-			{ -2, -2, -2, -2},
-		};
+		var bias = -2;
 		convLayer.SetInitializer(new RawData(filter, bias));
 		
 		var outputLayer = new Output2D<float[,]>(new Shape2D(4, 4));
@@ -105,5 +121,35 @@ class Program
 		net.AddLayer(outputLayer);
 		
 		return net;
+	}
+	
+	public static Net MakeTheNetwork2()
+	{
+		var net = new Net();
+		
+		var inputLayer = new Input2DLayer<float[,]>(new Shape2D(3,3));
+		inputLayer.SetProcessing(new FloatArrayPreprocessing2D());
+		
+		var convLayer = new Conv2D(new Shape2D(2,2));
+		float[,] filter = new float[,]
+		{
+			{.1f, .2f},
+			{.3f, .4f},
+		};
+		var bias = -2;
+		convLayer.SetInitializer(new RawData(filter, bias));
+		
+		var outputLayer = new Output2D<float[,]>(new Shape2D(4, 4));
+		outputLayer.SetProcessing(new FloatArrayProcessing2D());
+		
+		net.AddLayer(inputLayer);
+		net.AddLayer(convLayer);
+		net.AddLayer(outputLayer);
+		
+		return net;
+		
+		
+		
+		
 	}
 }

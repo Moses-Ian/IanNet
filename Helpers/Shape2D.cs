@@ -42,5 +42,10 @@ namespace IanNet.Helpers
         {
             return new float[Rows, Cols];
         }
+
+        public Index2D ToIndex2D() 
+        {
+            return new Index2D(Width, Height);
+        }
     }
 }

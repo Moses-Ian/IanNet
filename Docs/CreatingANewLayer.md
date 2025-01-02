@@ -106,7 +106,7 @@ public class Softmax1D : Layer1D
 
 ### Add any arrays that you need
 
-These are usually used for debugging.
+These are used for debugging.
 
 ```csharp
 public class Softmax1D : Layer1D
@@ -119,7 +119,7 @@ public class Softmax1D : Layer1D
 
 ### Override InitCpu
 
-This function allocates space for the arrays that will be available on the Cpu. This is important for input and output layers. For hidden layers, these arrays are for debugging. If you are using arrays that are not available in the superclass, be sure to define them now. Since our example does not use many of the available arrays, we can save space by not allocating them. Be sure to define any other values required to define the architecture.
+This function prepares data that will be used by the Cpu. Generally, this is preparation for upcoming build steps.
 
 ```csharp
 public class Softmax1D : Layer1D
@@ -129,10 +129,6 @@ public class Softmax1D : Layer1D
     public override void InitCpu()
     {
         NumberOfNodes = NumberOfInputs;
-
-        inputs = new float[NumberOfInputs];
-        nodes = new float[NumberOfNodes];
-        jacobian = new float[NumberOfNodes, NumberOfNodes];
     }
 }
 ```

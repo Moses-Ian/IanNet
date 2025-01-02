@@ -191,7 +191,7 @@ public Net MakeTheNetwork()
 	
 	int numberOfLabels = Enum.GetValues(typeof(Species)).Length;
 	var outputLayer = new Output1DLayer<Species>(numberOfLabels);
-	outputLayer.SetProcessing(new EnumProcessing<Species>());
+	outputLayer.SetProcessing(new EnumProcessing1D<Species>());
 	
 	net.AddLayer(inputLayer);
 	net.AddLayer(denseLayer1);
