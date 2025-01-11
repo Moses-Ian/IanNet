@@ -63,6 +63,39 @@ class Program
 		#endregion
 		
 		#region Test 2
+		//var Net = MakeTheNetwork2();
+		//
+		//Net.Compile();
+		//Console.WriteLine("Compiled Successfully");
+		//Console.WriteLine(Net.ToString());
+		//
+		//var convLayer = Net.Layers[1] as Conv2D;
+		//
+		//float[,] errors = new float[,]
+		//{
+		//	{1, 2},
+		//	{3, 4},
+		//};
+		//var errorsBuffer = convLayer.GetErrorsBuffer() as MemoryBuffer2D<float, Stride2D.DenseX>;
+		//errorsBuffer.CopyFromCPU(errors);
+		//
+		//Console.WriteLine(convLayer.GetErrors());
+		//Console.WriteLine(convLayer.GetFilter());
+		//
+		//convLayer.PassBackError();
+		//Console.WriteLine(convLayer.GetUpstreamErrors());
+		//float[,] target = new float[,]
+		//{
+		//	{ .4f, 1.10f,  .6f},
+		//	{1.4f, 3.00f, 1.4f},
+		//	{ .6f,  .11f,  .4f},
+		//};
+		//Console.WriteLine("Target:");
+		//Console.WriteLine(target);
+		
+		#endregion
+		
+		#region Test 3
 		var Net = MakeTheNetwork2();
 		
 		Net.Compile();
@@ -70,6 +103,15 @@ class Program
 		Console.WriteLine(Net.ToString());
 		
 		var convLayer = Net.Layers[1] as Conv2D;
+		
+		var inputs = new float[,]
+		{
+			{ .4f, 1.10f,  .6f},
+			{1.4f, 3.00f, 1.4f},
+			{ .6f,  .11f,  .4f},
+		};
+		Net.Forward(inputs);
+		Console.WriteLine(convLayer.GetInputs());
 		
 		float[,] errors = new float[,]
 		{
@@ -79,19 +121,38 @@ class Program
 		var errorsBuffer = convLayer.GetErrorsBuffer() as MemoryBuffer2D<float, Stride2D.DenseX>;
 		errorsBuffer.CopyFromCPU(errors);
 		
-		Console.WriteLine(convLayer.GetErrors());
 		Console.WriteLine(convLayer.GetFilter());
+		Console.WriteLine(convLayer.GetErrors());
 		
-		convLayer.PassBackError();
-		Console.WriteLine(convLayer.GetUpstreamErrors());
+		convLayer.BackPropogate();
+		Console.WriteLine("Gradient:");
+		Console.WriteLine(convLayer.GetFilterGradient());
 		float[,] target = new float[,]
 		{
-			{ .4f, 1.10f,  .6f},
-			{1.4f, 3.00f, 1.4f},
-			{ .6f,  .11f,  .4f},
+			{18.8f, 16.9f},
+			{9.64f, 7.73f},
+			
 		};
-		Console.WriteLine("Target:");
+		Console.WriteLine("Gradient Target:");
 		Console.WriteLine(target);
+
+		Console.WriteLine("Filter:");
+		Console.WriteLine(convLayer.GetFilter());
+		
+		target = new float[,]
+		{
+			{.1f - 18.8f, .2f - 16.9f},
+			{.3f - 9.64f, .4f - 7.73f}
+		};
+		Console.WriteLine("Filter Target:");
+		Console.WriteLine(target);
+		
+		Console.WriteLine("Bias:");
+		Console.WriteLine(convLayer.GetBias());
+		
+		float biasTarget = -2 - (1 + 2 + 3 + 4);
+		Console.WriteLine("Bias Target:");
+		Console.WriteLine(biasTarget);
 		
 		#endregion
     }
@@ -147,9 +208,5 @@ class Program
 		net.AddLayer(outputLayer);
 		
 		return net;
-		
-		
-		
-		
 	}
 }

@@ -17,6 +17,7 @@ namespace IanNet.IanNet.Initializers
     /// </summary>
     public class HeUniform : IInitializer1D,
                              IInitializer2D,
+                             IInitializer2DS,
                              IInitializer2D1D
     {
         public int n;

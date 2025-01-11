@@ -32,5 +32,6 @@ namespace IanNet.IanNet.Layers
         public abstract Array GetNodes();
         public abstract Array GetUpstreamErrors();
         public string Name { get; set; }
+        public float LearningRate { get; set; }
     }
 }

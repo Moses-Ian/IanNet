@@ -249,6 +249,26 @@ namespace IanNet.IanNet.Kernel
             result[index] = A[index] - B[index];
         }
 
+        /// <param name="index">The extent of the variable buffer</param>
+        /// <param name="gradient">A 2D buffer where element [0,0] is the gradient</param>
+        /// <param name="variable">A 1D buffer of length 1</param>
+        static void learnVariable(Index1D index, ArrayView2D<float, Stride2D.DenseX> gradient, ArrayView1D<float, Stride1D.Dense> variable, float learningRate)
+        {
+            // update the variable
+            if (index == 0)
+                variable[0] -= learningRate * gradient[0, 0];
+        }
+
+        public static void learn1D(Index1D index, ArrayView1D<float, Stride1D.Dense> gradient, ArrayView1D<float, Stride1D.Dense> array, float learningRate)
+        {
+            array[index] -= learningRate * gradient[index];
+        }
+
+        public static void learn2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> gradient, ArrayView2D<float, Stride2D.DenseX> array, float learningRate)
+        {
+            array[index] -= learningRate * gradient[index];
+        }
+
         public static void clip(Index1D index, ArrayView1D<float, Stride1D.Dense> A, float clip, ArrayView1D<float, Stride1D.Dense> result)
         {
             result[index] = A[index] > clip ? A[index] : clip;
@@ -348,13 +368,18 @@ namespace IanNet.IanNet.Kernel
         }
 
         /// <summary>
-        /// Adds up all of the numbers in an array. 
-        /// The result is an array where each element k is the sum of all elements 0 through k.
-        /// If the array size exceeds the group size, this will return the wrong result.
+        /// (Partial) Adds up all of the numbers in a matrix. 
         /// </summary>
-        public static void sum2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView1D<float, Stride1D.Dense> result)
+        /// <see>Conv2D.BackPropogate</see>
+        public static void partialSum2D(Index2D index, ArrayView2D<float, Stride2D.DenseX> A, ArrayView2D<float, Stride2D.DenseX> result)
         {
-            // do something
+            int offsetX = 2 * index.X;
+            int offsetY = 2 * index.Y;
+            if (offsetX < result.IntExtent.X && offsetY < result.IntExtent.Y)
+                result[index] = A[offsetX, offsetY]
+                              + A[offsetX + 1, offsetY]
+                              + A[offsetX, offsetY + 1]
+                              + A[offsetX + 1, offsetY + 1];
         }
 
         /// <summary>
@@ -362,10 +387,7 @@ namespace IanNet.IanNet.Kernel
         /// Uses base 2 instead of base e.
         /// If the array size exceeds the group size, this will return the wrong result.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="A"></param>
         /// <param name="memory">An array for holding temporary values.</param>
-        /// <param name="result"></param>
         public static void softmax1D(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> memory, ArrayView1D<float, Stride1D.Dense> result)
         {
             // Step 1: Find 2^x for each element
@@ -394,7 +416,6 @@ namespace IanNet.IanNet.Kernel
         /// Uses base 2 instead of base e.
         /// If the array size exceeds the group size, this will return the wrong result.
         /// </summary>
-        /// <param name="index"></param>
         /// <param name="A">Outputs of the softmax function with base 2.</param>
         /// <param name="result">The Jacobian, an (n, n) matrix</param>
         public static void softmax1DPrime(Index2D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView2D<float, Stride2D.DenseX> result)
