@@ -78,22 +78,14 @@ namespace IanNet.IanNet
                 Layers[i].Compile(device, Layers[i-1].GetNodesBuffer(), options);
             }
 
-            // hook up the errors in reverse order
-            //for (int i = Layers.Count - 2; i >= 1; i--)
-            //{
-            //    Layers[i].SetDownstreamErrorsBuffer(Layers[i+1].GetErrorsBuffer());
-            //}
-
+            // hook up the error buffers
             for (int i = 1; i < Layers.Count; i++)
             {
                 Layers[i].SetUpstreamErrorsBuffer(Layers[i-1].GetErrorsBuffer());
             }
 
             // compile kernels
-            copyKernel = device.LoadAutoGroupedStreamKernel<
-                Index1D,
-                ArrayView1D<float, Stride1D.General>,
-                ArrayView1D<float, Stride1D.Dense>>(copy);
+            //InitKernels();    // no kernels
 
             Compiled = true;
         }
@@ -273,15 +265,7 @@ namespace IanNet.IanNet
 
         #region Kernels
 
-        public Action<
-            Index1D,
-            ArrayView1D<float, Stride1D.General>,
-            ArrayView1D<float, Stride1D.Dense>> copyKernel;
-
-        private static void copy(Index1D index, ArrayView1D<float, Stride1D.General> source, ArrayView1D<float, Stride1D.Dense> destination)
-        {
-            destination[index] = source[index];
-        }
+        public void InitKernels() { }
 
         #endregion
     }

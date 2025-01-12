@@ -18,7 +18,6 @@ namespace IanNet.IanNet.Layers
         protected MemoryBuffer2D<float, Stride2D.DenseX> nodesBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> errorsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> targetsBuffer;
-        //protected MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer;
         protected MemoryBuffer2D<float, Stride2D.DenseX> upstreamErrorsBuffer;
 
 
@@ -95,6 +94,10 @@ namespace IanNet.IanNet.Layers
                 Console.WriteLine("the buffer is null");
             }
             this.upstreamErrorsBuffer = upstreamErrorsBuffer as MemoryBuffer2D<float, Stride2D.DenseX>;
+
+            // validate it
+            if (this.upstreamErrorsBuffer == null)
+                throw new InvalidCastException($"{Name}.SetUpstreamErrorsBuffer() had an invalid cast. Are you sure the buffer is the right dimension?");
         }
 
         #endregion

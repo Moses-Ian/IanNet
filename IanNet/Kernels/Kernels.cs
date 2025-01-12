@@ -17,18 +17,23 @@ namespace IanNet.IanNet.Kernel
 
         public static void none(Index1D index, ArrayView1D<float, Stride1D.Dense> a, ArrayView1D<float, Stride1D.Dense> b) { }
 
+        /// <remarks>The inverse of explode1Dto2D</remarks>
         public static void flatten2Dto1D(Index1D index, ArrayView2D<float, Stride2D.DenseX> input, ArrayView1D<float, Stride1D.Dense> output)            // 1D output array
         {
             // Compute the corresponding 2D row and column from the 1D index
-            int row = index / (int) input.Extent.X;
-            int col = index % (int) input.Extent.X;
+            int row = index / (int) input.Extent.Y;
+            int col = index % (int) input.Extent.Y;
 
-            // Ensure the index is within bounds
-            if (row < input.Extent.Y && col < input.Extent.X)
-            {
-                // Flatten the 2D element into the 1D output
-                output[index] = input[row, col];
-            }
+            // Flatten the 2D element into the 1D output
+            output[index] = input[row, col];
+        }
+
+        /// <remarks>The inverse of flatten2Dto1D</remarks>
+        public static void explode1Dto2D(Index2D index, ArrayView1D<float, Stride1D.Dense> input, ArrayView2D<float, Stride2D.DenseX> output)            // 1D output array
+        {
+            int index1D = index.X * (int)output.Extent.Y + index.Y;
+
+            output[index] = input[index1D];
         }
 
         // There's supposed to be a better way to do this, but ChatGPT doesn't know what it is and I don't feel like figuring it out

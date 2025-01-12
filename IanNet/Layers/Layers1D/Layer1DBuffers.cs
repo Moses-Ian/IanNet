@@ -17,7 +17,6 @@ namespace IanNet.IanNet.Layers
         protected MemoryBuffer1D<float, Stride1D.Dense> biasesBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> nodesBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense>  errorsBuffer;
-        //protected MemoryBuffer1D<float, Stride1D.Dense> downstreamErrorsBuffer;
         protected MemoryBuffer1D<float, Stride1D.Dense> upstreamErrorsBuffer;
 
 
@@ -82,12 +81,15 @@ namespace IanNet.IanNet.Layers
 
         public override void SetUpstreamErrorsBuffer(MemoryBuffer upstreamErrorsBuffer)
         {
-            Console.WriteLine($"{this.Name} set upstreamerrorsbuffer");
             if (upstreamErrorsBuffer == null)
             {
                 Console.WriteLine("the buffer is null");
             }
             this.upstreamErrorsBuffer = upstreamErrorsBuffer as MemoryBuffer1D<float, Stride1D.Dense>;
+
+            // validate it
+            if (this.upstreamErrorsBuffer == null)
+                throw new InvalidCastException($"{Name}.SetUpstreamErrorsBuffer() had an invalid cast. Are you sure the buffer is the right dimension?");
         }
 
         #endregion

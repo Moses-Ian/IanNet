@@ -17,8 +17,9 @@ namespace IanNet.IanNet.Layers
 
         public Shape2D InputShape;
         public new float[,] inputs;
+        public new float[,] upstreamErrors;
         protected new MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer;
-        public Action<Index1D, ArrayView2D<float, Stride2D.DenseX>, ArrayView1D<float, Stride1D.Dense>> flattenKernel;
+        protected new MemoryBuffer2D<float, Stride2D.DenseX> upstreamErrorsBuffer;
 
         public Flatten1D() : base() 
         {
@@ -69,12 +70,8 @@ namespace IanNet.IanNet.Layers
                 throw new ArgumentException("inputsBuffer must be of type MemoryBuffer2D<float, Stride2D.DenseX>");
 
             this.inputsBuffer = inputsBuffer as MemoryBuffer2D<float, Stride2D.DenseX>;
-            nodesBuffer = device.Allocate1D(nodes);
-        }
-
-        public override void CompileKernels()
-        {
-            flattenKernel = device.LoadAutoGroupedStreamKernel<Index1D, ArrayView2D<float, Stride2D.DenseX>, ArrayView1D<float, Stride1D.Dense>>(Kernels.flatten2Dto1D);
+            nodesBuffer = device.Allocate1D<float>(NumberOfNodes);
+            errorsBuffer = device.Allocate1D<float>(NumberOfNodes);
         }
 
         public override void Forward()
@@ -87,12 +84,10 @@ namespace IanNet.IanNet.Layers
         /// </summary>
         public override void PassBackError()
         {
-            // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
             if (upstreamErrorsBuffer == null)
                 return;
 
-            //transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
-            //multiplyKernel(NumberOfInputs, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
+            explodeKernel(InputShape.ToIndex2D(), errorsBuffer, upstreamErrorsBuffer);
         }
 
         // Flatten does not have errors that need to be corrected
@@ -100,7 +95,6 @@ namespace IanNet.IanNet.Layers
 
         public override Array GetInputs()
         {
-            Console.WriteLine("GetInputs");
             if (inputsBuffer == null)
                 return null;
 
@@ -114,6 +108,44 @@ namespace IanNet.IanNet.Layers
             {
                 new KeyValuePair<string, string>("NumberOfInputs", NumberOfNodes.ToString())
             };
+        }
+
+        #region Kernels
+
+        public Action<Index1D, ArrayView2D<float, Stride2D.DenseX>, ArrayView1D<float, Stride1D.Dense>> flattenKernel;
+        public Action<Index2D, ArrayView1D<float, Stride1D.Dense>, ArrayView2D<float, Stride2D.DenseX>> explodeKernel;
+
+        public override void CompileKernels()
+        {
+            flattenKernel = device.LoadAutoGroupedStreamKernel<
+                Index1D, 
+                ArrayView2D<float, Stride2D.DenseX>, 
+                ArrayView1D<float, Stride1D.Dense>>(Kernels.flatten2Dto1D);
+            explodeKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D, 
+                ArrayView1D<float, Stride1D.Dense>,
+                ArrayView2D<float, Stride2D.DenseX>>(Kernels.explode1Dto2D);
+        }
+
+        #endregion
+
+        public new float[,] GetUpstreamErrors()
+        {
+            if (upstreamErrorsBuffer == null)
+                return null;
+
+            upstreamErrors = upstreamErrorsBuffer.GetAsArray2D();
+            return upstreamErrors;
+        }
+
+        public override void SetUpstreamErrorsBuffer(MemoryBuffer upstreamErrorsBuffer)
+        {
+            if (upstreamErrorsBuffer == null)
+            {
+                Console.WriteLine($"{this.Name} set upstreamerrorsbuffer");
+                Console.WriteLine("the buffer is null");
+            }
+            this.upstreamErrorsBuffer = upstreamErrorsBuffer as MemoryBuffer2D<float, Stride2D.DenseX>;
         }
 
         public override string ToString()

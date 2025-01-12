@@ -38,33 +38,34 @@ class Program
 		
 		var inputs = new float[,] 
 		{
-			{1, 2, 3, 4},
-			{5, 6, 7, 8},
-			{8, 7, 6, 5},
-			{4, 3, 2, 1},
+			{1, 2, 3},
+			{3, 4, 4},
 		};
-		//var inputs = new float[] { 237468.2f, 272411.62f, 261626.9f };	// results in NaN
-		var target = new float[,] 
-		{
-			{0, 0},
-			{0, 0},
-		};
+		var target = new float[] {0, 0, 0, 0, 0, 0};
 		
 		var outputs = Net.Forward(inputs);
 		
 		var inputLayer = Net.Layers[0];
-		var maxPoolingLayer = Net.Layers[1] as MaxPooling2D;
+		var flattenLayer = Net.Layers[1] as Flatten1D;
 		var outputLayer = Net.Layers[2] as Output1D<float[]>;
 		
 		Console.WriteLine(inputLayer.GetInputs());
-		Console.WriteLine(maxPoolingLayer.GetNodes());
-		Console.WriteLine(outputs);
+		Console.WriteLine(flattenLayer.GetNodes());
+		Console.WriteLine(outputLayer.GetOutputs());
 		
 		Net.LoadTarget(target);
 		Net.CalculateError();
 		Net.PassBackError();
-		Console.WriteLine(maxPoolingLayer.GetErrors());
-		Console.WriteLine(maxPoolingLayer.GetUpstreamErrors());
+		Console.WriteLine(flattenLayer.GetErrors());
+		Console.WriteLine(flattenLayer.GetUpstreamErrors());
+		
+		var shouldBe = new float[,] 
+		{
+			{-1, -2, -3},
+			{-3, -4, -4},
+		};
+		Console.WriteLine("Should be:");
+		Console.WriteLine(shouldBe);
 
 		//Net.BackPropogate();
     }
@@ -73,15 +74,15 @@ class Program
 	{
 		var net = new Net();
 		
-		var inputLayer = new Input2D<float[,]>(new Shape2D(4,4));
+		var inputLayer = new Input2D<float[,]>(new Shape2D(2,3));
 		
-		var maxPoolLayer = new MaxPooling2D(new Shape2D(2,2));
+		var flattenLayer = new Flatten1D();
 		
-		var outputLayer = new Output2D<float[,]>(new Shape2D(2,2));
-		outputLayer.SetProcessing(new FloatArrayProcessing2D());
+		var outputLayer = new Output1D<float[]>(6);
+		outputLayer.SetProcessing(new FloatArrayProcessing1D());
 		
 		net.AddLayer(inputLayer);
-		net.AddLayer(maxPoolLayer);
+		net.AddLayer(flattenLayer);
 		net.AddLayer(outputLayer);
 		
 		return net;
