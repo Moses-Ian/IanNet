@@ -89,9 +89,9 @@ namespace IanNet.IanNet.Layers
 
         public override void SetUpstreamErrorsBuffer(MemoryBuffer upstreamErrorsBuffer)
         {
-            Console.WriteLine($"{this.Name} set upstreamerrorsbuffer");
             if (upstreamErrorsBuffer == null)
             {
+                Console.WriteLine($"{this.Name} set upstreamerrorsbuffer");
                 Console.WriteLine("the buffer is null");
             }
             this.upstreamErrorsBuffer = upstreamErrorsBuffer as MemoryBuffer2D<float, Stride2D.DenseX>;

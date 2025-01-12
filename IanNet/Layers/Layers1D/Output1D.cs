@@ -10,7 +10,7 @@ using IanNet.IanNet.DataProcessing;
 
 namespace IanNet.IanNet.Layers
 {
-    public class Output1DLayer<T> : Layer1D
+    public class Output1D<T> : Layer1D
     {
         private readonly string defaultName = "Output1DLayer";
         public delegate T PostprocessDelegate(float[] values);
@@ -26,10 +26,15 @@ namespace IanNet.IanNet.Layers
         public float[] targets;
 
 
-        public Output1DLayer(int NumberOfOutputs)
+        public Output1D(int NumberOfOutputs)
             : base(NumberOfOutputs)
         {
             Name = defaultName;
+        }
+
+        public static float[] test(float[] values)
+        {
+            return values;
         }
 
         public void SetPostprocess(PostprocessDelegate postprocess)

@@ -143,7 +143,7 @@ public Net MakeTheNetwork()
 	var net = new Net();
 	var learningRate = 0.1f;
 	
-	var inputLayer = new Input2DLayer<Image>(new Shape2D(28, 28));
+	var inputLayer = new Input2D<Image>(new Shape2D(28, 28));
 	inputLayer.SetPreprocess(Preprocess);
 	
 	var convLayer = new Conv2D(new Shape2D(3, 3));
@@ -166,7 +166,7 @@ public Net MakeTheNetwork()
 	//hiddenLayer2.SetOptimizer(new Adam(learningRate));
 	
 	int numberOfLabels = Enum.GetValues(typeof(Label)).Length;
-	var outputLayer = new Output1DLayer<Label>(numberOfLabels);
+	var outputLayer = new Output1D<Label>(numberOfLabels);
 	outputLayer.SetProcessing(new EnumProcessing1D<Label>());
 	// The output layer uses categorical cross-entropy by default
 	

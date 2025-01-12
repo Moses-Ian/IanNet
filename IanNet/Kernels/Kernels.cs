@@ -334,6 +334,7 @@ namespace IanNet.IanNet.Kernel
             weights[index] += gradients[index];
         }
 
+        /// <param name="index">Extent of the results</param>
         public static void maxPool(Index2D index, int filterWidth, int filterHeight, ArrayView2D<float, Stride2D.DenseX> inputs, ArrayView2D<float, Stride2D.DenseX> results)
         {
             int row = index.X * filterHeight;
@@ -345,6 +346,19 @@ namespace IanNet.IanNet.Kernel
                     max = MathF.Max(max, inputs[row + i, col + j]);
 
             results[index] = max;
+        }
+
+        /// <summary>
+        /// If this element was the maximum, then it gets all of the error. Otherwise, none.
+        /// </summary>
+        /// <param name="index">Extent of the upstreamErrors</param>
+        /// <param name="upstreamErrors">A 2D buffer the same size as the original inputs</param>
+        public static void maxPoolPrime(Index2D index, int filterWidth, int filterHeight, ArrayView2D<float, Stride2D.DenseX> inputs, ArrayView2D<float, Stride2D.DenseX> outputs, ArrayView2D<float, Stride2D.DenseX> errors, ArrayView2D<float, Stride2D.DenseX> upstreamErrors)
+        {
+            var x = index.X / filterHeight;
+            var y = index.Y / filterWidth;
+
+            upstreamErrors[index] = inputs[index] == outputs[x, y] ? errors[x, y] : 0;
         }
 
         /// <summary>

@@ -13,6 +13,7 @@
   <Namespace>Emgu.CV.CvEnum</Namespace>
   <Namespace>Emgu.CV.Structure</Namespace>
   <Namespace>IanNet</Namespace>
+  <Namespace>IanNet.Helpers</Namespace>
   <Namespace>IanNet.IanNet</Namespace>
   <Namespace>IanNet.IanNet.Activation</Namespace>
   <Namespace>IanNet.IanNet.Batch</Namespace>
@@ -35,39 +36,52 @@ class Program
 		Console.WriteLine("Compiled Successfully");
 		Console.WriteLine(Net.ToString());
 		
-		var inputs = new float[] { 1.43f, -0.4f, 0.23f };
+		var inputs = new float[,] 
+		{
+			{1, 2, 3, 4},
+			{5, 6, 7, 8},
+			{8, 7, 6, 5},
+			{4, 3, 2, 1},
+		};
 		//var inputs = new float[] { 237468.2f, 272411.62f, 261626.9f };	// results in NaN
-		var target = new float[] { 1.0f, 0.0f, 0.0f };
+		var target = new float[,] 
+		{
+			{0, 0},
+			{0, 0},
+		};
 		
 		var outputs = Net.Forward(inputs);
-		Console.WriteLine(outputs);
 		
 		var inputLayer = Net.Layers[0];
-		var softmaxLayer = Net.Layers[1] as Softmax1D;
-		var outputLayer = Net.Layers[2] as Output1DLayer<float[]>;
+		var maxPoolingLayer = Net.Layers[1] as MaxPooling2D;
+		var outputLayer = Net.Layers[2] as Output1D<float[]>;
+		
+		Console.WriteLine(inputLayer.GetInputs());
+		Console.WriteLine(maxPoolingLayer.GetNodes());
+		Console.WriteLine(outputs);
 		
 		Net.LoadTarget(target);
 		Net.CalculateError();
 		Net.PassBackError();
-		Console.WriteLine(softmaxLayer.GetJacobian());
-		Console.WriteLine(softmaxLayer.GetErrors());
-		Net.BackPropogate();
-		Console.WriteLine(inputLayer.GetErrors());
+		Console.WriteLine(maxPoolingLayer.GetErrors());
+		Console.WriteLine(maxPoolingLayer.GetUpstreamErrors());
+
+		//Net.BackPropogate();
     }
 	
 	public static Net MakeTheNetwork()
 	{
 		var net = new Net();
 		
-		var inputLayer = new Input1DLayer<float[]>(3);
+		var inputLayer = new Input2D<float[,]>(new Shape2D(4,4));
 		
-		var softmaxLayer = new Softmax1D();
+		var maxPoolLayer = new MaxPooling2D(new Shape2D(2,2));
 		
-		var outputLayer = new Output1DLayer<float[]>(3);
-		outputLayer.SetProcessing(new FloatArrayProcessing());
+		var outputLayer = new Output2D<float[,]>(new Shape2D(2,2));
+		outputLayer.SetProcessing(new FloatArrayProcessing2D());
 		
 		net.AddLayer(inputLayer);
-		net.AddLayer(softmaxLayer);
+		net.AddLayer(maxPoolLayer);
 		net.AddLayer(outputLayer);
 		
 		return net;

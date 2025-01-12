@@ -9,7 +9,7 @@ using IanNet.IanNet.DataProcessing;
 
 namespace IanNet.IanNet.Layers
 {
-    public class Input1DLayer<T> : Layer1D
+    public class Input1D<T> : Layer1D
     {
         public delegate float[] PreprocessDelegate(T input);
         private PreprocessDelegate _Preprocess;
@@ -17,13 +17,14 @@ namespace IanNet.IanNet.Layers
         // metadata;
         private readonly string defaultName = "Input1D";
 
-        public Input1DLayer(int NumberOfInputs)
+        public Input1D(int NumberOfInputs)
             : base(NumberOfInputs)
         {
             this.NumberOfInputs = NumberOfInputs;
             Name = defaultName;
 
-            //SetProcessing(new FloatArrayPreprocessing() as IPreprocessing<T>);
+            if (typeof(T) == typeof(float[]))
+                SetPreprocess(data => data as float[]);
         }
 
         public void SetPreprocess(PreprocessDelegate preprocess)

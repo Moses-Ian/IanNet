@@ -20,13 +20,7 @@ namespace IanNet.IanNet.Layers
         private readonly string defaultName = "MaxPooling2D";
 
         Shape2D FilterShape;
-        Action<
-            Index2D,
-            int,
-            int,
-            ArrayView2D<float, Stride2D.DenseX>,
-            ArrayView2D<float, Stride2D.DenseX>> poolKernel;
-
+        
         /// <summary>
         /// Pass in the filter shape that you want
         /// </summary>
@@ -39,9 +33,7 @@ namespace IanNet.IanNet.Layers
 
         public override void InitCpu()
         {
-            inputs = new float[InputShape.Height, InputShape.Width];
-            nodes = new float[InputShape.Height / FilterShape.Height, InputShape.Width / FilterShape.Width];
-            NodeShape = new Shape2D(nodes);
+            NodeShape = new Shape2D(InputShape.Width / FilterShape.Width, InputShape.Height / FilterShape.Height);
         }
 
         public override void InitBuffers(MemoryBuffer2D<float, Stride2D.DenseX> inputsBuffer = null)
@@ -50,37 +42,23 @@ namespace IanNet.IanNet.Layers
                 throw new ArgumentNullException(nameof(inputsBuffer));
 
             this.inputsBuffer = inputsBuffer;
-            nodesBuffer = device.Allocate2DDenseX<float>(GetIndex2D(nodes));
-        }
-
-        public override void CompileKernels()
-        {
-            poolKernel = device.LoadAutoGroupedStreamKernel<
-                Index2D,
-                int,
-                int,
-                ArrayView2D<float, Stride2D.DenseX>,
-                ArrayView2D<float, Stride2D.DenseX>>(Kernels.maxPool);
+            nodesBuffer = device.Allocate2DDenseX<float>(NodeShape.ToIndex2D());
+            errorsBuffer = device.Allocate2DDenseX<float>(NodeShape.ToIndex2D());
         }
 
         public override void InitNetwork() { }
 
         public override void Forward()
         {
-            poolKernel(GetIndex2D(nodes), FilterShape.Width, FilterShape.Height, inputsBuffer, nodesBuffer);
+            poolKernel(nodesBuffer.IntExtent, FilterShape.Width, FilterShape.Height, inputsBuffer, nodesBuffer);
         }
 
-        /// <summary>
-        /// Not fully defined because I haven't gotten into the errors for CNNs yet
-        /// </summary>
         public override void PassBackError()
         {
-            // input layers don't have error buffers, so the layers after them do not have upstreamerrorbuffers
             if (upstreamErrorsBuffer == null)
                 return;
 
-            //transposeKernel(GetIndex2D(weightsTransposed), weightsBuffer, weightsTransposedBuffer);
-            //multiplyKernel(NumberOfInputs, weightsTransposedBuffer, errorsBuffer, upstreamErrorsBuffer);
+            poolPrimeKernel(upstreamErrorsBuffer.IntExtent, FilterShape.Width, FilterShape.Height, inputsBuffer, nodesBuffer, errorsBuffer, upstreamErrorsBuffer);
         }
 
         // MaxPooling does not have errors that need to be corrected
@@ -98,6 +76,43 @@ namespace IanNet.IanNet.Layers
                 new KeyValuePair<string, string>("InputHeight", NodeShape.Height.ToString()),
             };
         }
+
+        #region Kernels
+
+        Action<
+            Index2D,
+            int,
+            int,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>> poolKernel;
+        Action<
+            Index2D,
+            int,
+            int,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>,
+            ArrayView2D<float, Stride2D.DenseX>> poolPrimeKernel;
+        
+        public override void CompileKernels()
+        {
+            poolKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                int,
+                int,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>>(Kernels.maxPool);
+            poolPrimeKernel = device.LoadAutoGroupedStreamKernel<
+                Index2D,
+                int,
+                int,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>,
+                ArrayView2D<float, Stride2D.DenseX>>(Kernels.maxPoolPrime);
+        }
+
+        #endregion
 
         public override string ToString()
         {

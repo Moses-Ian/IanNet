@@ -100,7 +100,8 @@ namespace IanNet.IanNet
 
         public void InitGpu(bool forceCPU = false)
         {
-            Console.WriteLine("forceCPU: " + forceCPU);
+            if (forceCPU)
+                Console.WriteLine("forceCPU: " + forceCPU);
             // set up the gpu
             context = Context.Create(builder => builder.Cuda().CPU().EnableAlgorithms());
             device = context.GetPreferredDevice(forceCPU).CreateAccelerator(context);
