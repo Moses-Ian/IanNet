@@ -12,7 +12,7 @@ namespace IanNet.IanNet.Layers
 {
     public class Output1D<T> : Layer1D
     {
-        private readonly string defaultName = "Output1DLayer";
+        private static readonly string defaultName = "Output1DLayer";
         public delegate T PostprocessDelegate(float[] values);
         public PostprocessDelegate Postprocess;
         public delegate float[] BackPostprocessDelegate(T values);

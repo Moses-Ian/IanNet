@@ -42,7 +42,7 @@ namespace IanNet.IanNet.Layers
 ```csharp
 public class Softmax1D : Layer1D
 {
-    private readonly string defaultName = "Softmax1D";
+    private static readonly string defaultName = "Softmax1D";
 }
 ```
 
@@ -51,7 +51,7 @@ public class Softmax1D : Layer1D
 ```csharp
 public class Softmax1D : Layer1D
 {
-    private readonly string defaultName = "Softmax1D";
+    private static readonly string defaultName = "Softmax1D";
 
     public Softmax1D() : base() 
     {

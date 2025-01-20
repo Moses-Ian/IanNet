@@ -1,50 +1,42 @@
-﻿// I have 1 iteration of the algorithm complete. The next step is to figure out how to decide how many iterations to run.
-
-using ILGPU.Runtime;
+﻿using IanNet.IanNet.Kernel;
 using ILGPU;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using IanNet.IanNet.Attributes;
-using IanNet.IanNet.Kernel;
+using ILGPU.Runtime;
 
 namespace IanNet.IanNet.Normalizers
 {
-    /// <summary>
-    /// Normalizers pass data through a network and check the node values at the end. 
-    /// If the values are out of bounds, the normalizer modifies the weights to get them in bounds again.
-    /// </summary>
     public class ShrinkUntilNotNaN : INormalizer
     {
-        // This class follows the manager pattern. You shouldn't mess with these, but they're available if you really want to.
-        public ShrinkUntilNotNaN<MemoryBuffer2D<float, Stride2D.DenseX>, MemoryBuffer1D<float, Stride1D.Dense>> ShrinkUntilNotNaN_2_1;
-
-        Func<MemoryBuffer> GetBufferToShrink;
-        Func<MemoryBuffer> GetBufferToCheck;
+        // metadata
+        private static readonly string defaultName = "ShrinkUntilNotNaN"; 
+        public string Name { get; set; } = defaultName;
 
         public int shrinkDim;
         public int checkDim;
 
-        public ShrinkUntilNotNaN(int shrinkDim, int checkDim, Func<MemoryBuffer2D<float, Stride2D.DenseX>> getBufferToShrink, Func<MemoryBuffer1D<float, Stride1D.Dense>> getBufferToCheck)
+        // This class follows the manager pattern. You shouldn't mess with these, but they're available if you really want to.
+        public ShrinkUntilNotNaN<MemoryBuffer2D<float, Stride2D.DenseX>, MemoryBuffer1D<float, Stride1D.Dense>> ShrinkUntilNotNaN_2_1;
+
+        // overload the constructor with the other types
+        public ShrinkUntilNotNaN(Func<MemoryBuffer2D<float, Stride2D.DenseX>> getBufferToShrink, Func<MemoryBuffer1D<float, Stride1D.Dense>> getBufferToCheck)
         {
-            this.shrinkDim = shrinkDim;
-            this.checkDim = checkDim;
+            shrinkDim = 2;
+            checkDim = 1;
 
-            GetBufferToShrink = getBufferToShrink;
-            GetBufferToCheck = getBufferToCheck;
-
-            if (shrinkDim == 2 && checkDim == 1)
-                ShrinkUntilNotNaN_2_1 = new ShrinkUntilNotNaN<MemoryBuffer2D<float, Stride2D.DenseX>, MemoryBuffer1D<float, Stride1D.Dense>>(getBufferToShrink, getBufferToCheck);
+            // You could use Activator to determine the type dynamically.
+            // But as a general rule, Activator makes code unreadable.
+            ShrinkUntilNotNaN_2_1 = new ShrinkUntilNotNaN<MemoryBuffer2D<float, Stride2D.DenseX>, MemoryBuffer1D<float, Stride1D.Dense>>(
+                getBufferToShrink,
+                getBufferToCheck
+            );
         }
 
-        public bool IsNaN()
+        public bool IsNormal()
         {
             if (shrinkDim == 2 && checkDim == 1)
-                return ShrinkUntilNotNaN_2_1.IsNaN();
+                return ShrinkUntilNotNaN_2_1.IsNormal();
 
-            return false;
+            // default case -> tell whoever called you that everything is normal
+            return true;
         }
 
         public void Compile(Accelerator device)
@@ -53,16 +45,12 @@ namespace IanNet.IanNet.Normalizers
                 ShrinkUntilNotNaN_2_1.Compile(device);
         }
 
-        [DuplicateCode("ShrinkUntilNotNaN<TShrink, TCheck>.Normalize")]
         public void Normalize()
         {
             // The manager will choose which one to call
             if (shrinkDim == 2 && checkDim == 1)
             {
-                ShrinkUntilNotNaN_2_1.Normalize_2_1(
-                    GetBufferToShrink() as MemoryBuffer2D<float, Stride2D.DenseX>,
-                    GetBufferToCheck() as MemoryBuffer1D<float, Stride1D.Dense>
-                );
+                ShrinkUntilNotNaN_2_1.Normalize();
                 return;
             }
         }
@@ -77,6 +65,10 @@ namespace IanNet.IanNet.Normalizers
         where TShrink : MemoryBuffer
         where TCheck : MemoryBuffer
     {
+        // metadata
+        private static readonly string defaultName = "ShrinkUntilNotNaN";
+        public string Name { get; set; } = defaultName;
+        
         // Gpu things
         Accelerator device;
 
@@ -86,8 +78,6 @@ namespace IanNet.IanNet.Normalizers
         int shrinkDim;
         int checkDim;
 
-        readonly float[] zero = new float[] { 0f };
-
         /// <summary>If any value in BufferToCheck is NaN, then divide every element in BufferToShrink by 2 until no value is NaN</summary>
         /// <param name="getBufferToShrink">Pass in the getter, NOT THE BUFFER ITSELF</param>
         /// <param name="getBufferToCheck">Pass in the getter, NOT THE BUFFER ITSELF</param>
@@ -96,7 +86,7 @@ namespace IanNet.IanNet.Normalizers
             // set the getters
             GetBufferToShrink = getBufferToShrink;
             GetBufferToCheck = getBufferToCheck;
-
+            
             // set the dims of bufferToShrink
             if (typeof(TShrink) == typeof(MemoryBuffer2D<float, Stride2D.DenseX>))
                 shrinkDim = 2;
@@ -134,14 +124,19 @@ namespace IanNet.IanNet.Normalizers
         
         public void InitBuffers()
         {
-            var bufferToCheck = GetBufferToCheck();
             isNaNBuffer = device.Allocate1D<byte>(1);
-            //isNaNBuffer = device.Allocate1D<float>(1);
         }
 
-        public bool IsNaN()
+        public bool IsNormal()
         {
-            return isNaNBuffer.GetAsArray1D()[0] == 1f;
+            // prepare the flag
+            resetFlagKernel((int)isNaNBuffer.Length, isNaNBuffer);
+
+            RunTheCheckKernel();
+
+            // if the check buffer does not have NaN, then isNaNBuffer will be zero
+            // -> the shrink buffer is normal
+            return isNaNBuffer.GetAsArray1D()[0] == 0f;
         }
 
         #endregion
@@ -187,30 +182,30 @@ namespace IanNet.IanNet.Normalizers
 
         #endregion
 
-        [DuplicateCode("ShrinkUntilNotNaN.Normalize")]
         public void Normalize()
-        {
-            // I'm sure there's a cool way to compile this ahead of time, but idk what it is
-            if (shrinkDim == 2 && checkDim == 1)
-                Normalize_2_1(
-                    GetBufferToShrink() as MemoryBuffer2D<float, Stride2D.DenseX>,
-                    GetBufferToCheck() as MemoryBuffer1D<float, Stride1D.Dense>
-                );
-
-        }
-
-        // you shouldn't be calling these directly
-        internal void Normalize_2_1(MemoryBuffer2D<float, Stride2D.DenseX> bufferToShrink, MemoryBuffer1D<float, Stride1D.Dense> bufferToCheck)
         {
             // prepare the flag
             resetFlagKernel((int)isNaNBuffer.Length, isNaNBuffer);
 
-            // run the kernel
-            check1DKernel((int)bufferToCheck.Length, bufferToCheck, isNaNBuffer);
-            shrink2DKernel(bufferToShrink.IntExtent, bufferToShrink, isNaNBuffer);  // this will check the flag before doing anything
+            // run the check kernel
+            RunTheCheckKernel();
+
+            // run the shrink kernel
+            if (shrinkDim == 2)
+            {
+                var bufferToShrink = GetBufferToShrink() as MemoryBuffer2D<float, Stride2D.DenseX>;
+                shrink2DKernel(bufferToShrink.IntExtent, bufferToShrink, isNaNBuffer);  // this will check the flag before doing anything
+            }
         }
 
-        
+        public void RunTheCheckKernel()
+        {
+            if (checkDim == 1)
+            {
+                var bufferToCheck = GetBufferToCheck() as MemoryBuffer1D<float, Stride1D.Dense>;
+                check1DKernel((int)bufferToCheck.Length, bufferToCheck, isNaNBuffer);
+            }
+        }
     }
 
 }

@@ -15,7 +15,7 @@ namespace IanNet.IanNet.Layers
     public class Softmax1D : Layer1D
     {
         // metadata
-        private readonly string defaultName = "Softmax1D";
+        private static readonly string defaultName = "Softmax1D";
 
         // buffers
         protected MemoryBuffer2D<float, Stride2D.DenseX> jacobianBuffer;

@@ -2,6 +2,14 @@
 
 There are some things that make IanNet very different from Keras. Here are some common quirks.
 
+## Normalizers
+
+The idea behind normalizers may be a bit unintuitive. The idea is that you have one or more layers which are causing wild outputs, like NaN or Infinity. So what you _want_ to do is to decrease the weights in the layer that's causing that. Easy enough. Cut the weights in half over and over again until you get valid outputs.
+
+But that might be caused by more than one layer. Cutting one of the layer's weights in half over and over again might not get the result you want. What you need to do is cut the weights in each problem layer in half one after another, then go back and start over with the first one. Kind of like removing the bolts on a car tire. You can't remove one bolt entirely; you have to do a star pattern. Likewise, you can't cut one of the layer's weights by 2^5, you have to cut each layer's weights in half in rotation.
+
+
+
 ## Categorical Cross-Entropy
 
 If you use the standard Softmax Layer with the standard Output Layer, you are inherently doing categorical cross-entropy. You don't need to declare it as a loss function. You only need to track it with the history.

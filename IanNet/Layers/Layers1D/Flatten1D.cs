@@ -13,7 +13,7 @@ namespace IanNet.IanNet.Layers
     public class Flatten1D : Layer1D
     {
         // metadata
-        private readonly string defaultName = "Flatten1D";
+        private static readonly string defaultName = "Flatten1D";
 
         public Shape2D InputShape;
         public new float[,] inputs;

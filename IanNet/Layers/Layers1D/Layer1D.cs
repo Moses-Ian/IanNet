@@ -18,7 +18,7 @@ namespace IanNet.IanNet.Layers
     /// </summary>
     public partial class Layer1D : Layer
     {
-        private readonly string defaultName = "Layer1D";
+        private static readonly string defaultName = "Layer1D";
 
         // gpu things
         public Accelerator device;

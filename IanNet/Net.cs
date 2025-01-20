@@ -1,19 +1,13 @@
-﻿// TODO: implement mini-batching in Train
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using IanNet.IanNet.Batch;
+using IanNet.IanNet.Exceptions;
 using IanNet.IanNet.Layers;
-using ILGPU.Runtime.Cuda;
-using ILGPU.Runtime.CPU;
-using ILGPU.Runtime;
-using ILGPU;
-using ILGPU.Runtime.OpenCL;
-using IanNet.IanNet.Batch;
 using IanNet.IanNet.Measurement;
 using IanNet.IanNet.Normalizers;
+using ILGPU;
+using ILGPU.Runtime;
+using ILGPU.Runtime.CPU;
+using ILGPU.Runtime.Cuda;
+using System.Text;
 
 namespace IanNet.IanNet
 {
@@ -63,12 +57,32 @@ namespace IanNet.IanNet
             Normalizers.Add(normalizer);
         }
 
-        public void Normalize()
+        public void Normalize(object inputs)
         {
             if (!Compiled)
                 throw new Exception("This network has not been compiled yet");
 
-            Normalizers.ForEach(n => n.Normalize());
+            int escapeCount = 1;
+            do
+            {
+                // Step 1: Run some data through
+                Forward(inputs, returnResult: false);
+
+                // Step 2: If all is normal, we're good
+                if (Normalizers.All(n => n.IsNormal()))
+                    break;
+
+                // Step 3: All is not normal -> normalize them
+                // note: normalize must always check that it's not normal before changing things
+                Normalizers.ForEach(n => n.Normalize());
+
+                // Maintain an escape
+                escapeCount++;
+            } while (escapeCount < 100);
+
+            if (escapeCount >= 100)
+                throw new FailedToNormalizeException(Normalizers.Where(n => !n.IsNormal())
+                                                                .Select(n => n.Name));
         }
 
         public void Compile(Dictionary<string, string> Options = null)

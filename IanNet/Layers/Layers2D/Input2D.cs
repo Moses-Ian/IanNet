@@ -13,7 +13,7 @@ namespace IanNet.IanNet.Layers
     public class Input2D<T> : Layer2D
     {
         // metadata
-        private readonly string defaultName = "Input2D";
+        private static readonly string defaultName = "Input2D";
 
         public delegate float[,] PreprocessDelegate(T input);
         private PreprocessDelegate _Preprocess;
