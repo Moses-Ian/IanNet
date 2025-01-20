@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IanNet.IanNet
 {
-    public static class EarlyStoppingDelegateImplementations
+    public static class Stops
     {
         #region Functions that can be used out of the box
         

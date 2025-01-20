@@ -9,6 +9,7 @@ namespace IanNet.IanNet
     public class History
     {
         public List<Epoch> Epochs;
+        public TrainingOptions TrainingOptions;
 
         public History()
         {

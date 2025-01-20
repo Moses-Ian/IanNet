@@ -20,6 +20,8 @@
   <Namespace>IanNet.IanNet.DataProcessing</Namespace>
   <Namespace>IanNet.IanNet.Initializers</Namespace>
   <Namespace>IanNet.IanNet.Layers</Namespace>
+  <Namespace>IanNet.IanNet.Measurement</Namespace>
+  <Namespace>IanNet.IanNet.Normalizers</Namespace>
   <Namespace>IanNet.IanNet.Optimizers</Namespace>
   <Namespace>System.Drawing</Namespace>
 </Query>
@@ -53,6 +55,7 @@ void Main()
 	//Image image = new Image(pixels);
 	
 	var output = Net.Forward(image);
+	output = Net.Forward(image);
 	
 	//Console.WriteLine(Net.Layers[0].GetInputs());
 	//Console.WriteLine(Net.Layers[1].GetNodes());
@@ -62,12 +65,13 @@ void Main()
 	//Console.WriteLine(Net.Layers[5].GetNodes());
 	//Console.WriteLine(Net.Layers[6].GetNodes());
 	//Console.WriteLine(Net.Layers[7].GetNodes());
+	//Console.WriteLine(Net.Layers[7].GetInputs());
 	
 	
 	
 	
-	Console.WriteLine("done");
-	return;
+	//Console.WriteLine("done");
+	//return;
 	
 	var batch = new LabelledBatch<Tuple<object, object>>();
 	IEnumerable<string> lines = File.ReadLines(trainingFilepath).Take(take);
@@ -87,8 +91,8 @@ void Main()
 	};
 	
 	var earlyStopping = new EarlyStopping();
-	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfLossIsNaN);
-	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfAccuracyIsHigh(0.99f));
+	earlyStopping.AddStop(Stops.StopIfLossIsNaN);
+	earlyStopping.AddStop(Stops.StopIfAccuracyIsHigh(0.99f));
 	Net.SetEarlyStopping(earlyStopping);
 	
 	var stopwatch = new Stopwatch();
@@ -102,7 +106,9 @@ void Main()
 	stopwatch.Stop();
 	Console.WriteLine($"Training took {stopwatch.ElapsedMilliseconds} ms");
 	
-	var graph = Net.history.ToAccuracyGraph(400, 200);
+	Console.WriteLine(Net.history.Epochs);
+	
+	var graph = Net.history.ToCategoricalCrossEntropyGraph(400, 200);
 	
 	var graphImage = new Image<Gray, Byte>(graph.GetLength(1), graph.GetLength(0));
 	for(int x=0; x<graph.GetLength(1); x++)
@@ -112,22 +118,71 @@ void Main()
 			graphImage.Data[y, x, 0] = graph[y, x];
 		}
 	}
+	CvInvoke.Imshow("Categorical Cross Entropy", graphImage);
 	
-	Console.WriteLine(Net.history.Epochs);
-	var graph2 = Net.history.ToLossGraph(400, 200);
+	//var graph2 = Net.history.ToLossGraph(400, 200);
+	//
+	//var graphImage2 = new Image<Gray, Byte>(graph.GetLength(1), graph.GetLength(0));
+	//for(int x=0; x<graph.GetLength(1); x++)
+	//{
+	//	for(int y=0; y<graph.GetLength(0); y++)
+	//	{
+	//		graphImage2.Data[y, x, 0] = graph2[y, x];
+	//	}
+	//}
+	//CvInvoke.Imshow("Loss Graph", graphImage2);
 	
-	var graphImage2 = new Image<Gray, Byte>(graph.GetLength(1), graph.GetLength(0));
-	for(int x=0; x<graph.GetLength(1); x++)
+	Console.WriteLine("Layer 1 Nodes:");
+	Console.WriteLine(Net.Layers[1].GetNodes());
+	Console.WriteLine("Layer 1 Filter:");
+	Conv2D convLayer = (Net.Layers[1] as Conv2D); 
+	float[,] filter = convLayer.GetFilter();
+	Console.WriteLine(filter);
+	Console.WriteLine("Layer 5 nodes:");
+	Console.WriteLine(Net.Layers[5].GetNodes());
+	Console.WriteLine("Layer 6 nodes:");
+	Console.WriteLine(Net.Layers[6].GetNodes());
+	
+	Console.WriteLine("Normalizing...");
+	var normalizer = Net.Normalizers[0] as ShrinkUntilNotNaN;
+	int count = 0;
+	do 
 	{
-		for(int y=0; y<graph.GetLength(0); y++)
-		{
-			graphImage2.Data[y, x, 0] = graph2[y, x];
-		}
-	}
+		// normalize it
+		Net.Normalize();
+		
+		// prepare for the next iteration
+		Net.Forward(image);
+		
+		Console.WriteLine(++count);
+	}while (normalizer.IsNaN() && count < 30);
 	
-	CvInvoke.Imshow("Accuracy Graph", graphImage);
-	CvInvoke.Imshow("Loss Graph", graphImage2);
-	//Console.WriteLine(Net.history.Epochs);
+	Console.WriteLine(normalizer.IsNaN());
+	
+	result = (Label) Net.Forward(image);
+	Console.WriteLine(result.ToString());
+	
+	Console.WriteLine("Layer 1 Nodes:");
+	Console.WriteLine(Net.Layers[1].GetNodes());
+	Console.WriteLine("Layer 1 Filter:");
+	filter = convLayer.GetFilter();
+	Console.WriteLine(filter);
+	Console.WriteLine("Layer 5 nodes:");
+	Console.WriteLine(Net.Layers[5].GetNodes());
+	Console.WriteLine("Layer 6 nodes:");
+	Console.WriteLine(Net.Layers[6].GetNodes());
+	Measurements.GetCategoricalCrossEntropy(Net, batch);
+	
+	
+	//Console.WriteLine(Net.Layers[1].GetNodes());
+	//Console.WriteLine(Net.Layers[2].GetNodes());
+	//Console.WriteLine(Net.Layers[3].GetNodes());
+	//Console.WriteLine(Net.Layers[4].GetNodes());
+	//Console.WriteLine(Net.Layers[5].GetNodes());
+	//Console.WriteLine(Net.Layers[6].GetNodes());
+	//Console.WriteLine(Net.Layers[7].GetNodes());
+	//Console.WriteLine(Net.Layers[7].GetNodes());
+
 	
 	Console.WriteLine("done");
 	CvInvoke.WaitKey(0);
@@ -179,6 +234,9 @@ public Net MakeTheNetwork()
 	net.AddLayer(softmaxLayer);
 	net.AddLayer(outputLayer);
 	
+	// set normalizers
+	net.AddNormalizer(
+		new ShrinkUntilNotNaN(2, 1, convLayer.GetFilterBuffer, softmaxLayer.GetNodesBuffer));
 	
 	return net;
 }

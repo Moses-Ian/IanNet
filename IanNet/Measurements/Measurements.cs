@@ -89,12 +89,13 @@ namespace IanNet.IanNet.Measurement
                 throw new Exception("BackPostprocess was null on the last layer");
 
             float categoricalCrossEntropy = 0f;
+            var datas = new List<Data>();
             foreach (var item in batch)
             {
                 // get the input and target
                 object input = item.Item1;
                 object target = item.Item2;
-
+                
                 // get the guess (without the post-processing)
                 // aka predicted
                 Net.Forward(input, returnResult: false);
@@ -102,19 +103,34 @@ namespace IanNet.IanNet.Measurement
                 
                 // float[] expected = backPostProcess(target)
                 float[] expected = backPostProcess.Invoke(OutputLayer, new object[] { target }) as float[];
-
-
+                
+                var data = new Data();
                 for (int i=0; i<guess.Length; i++)
                 {
                     var logit = (float)(-Math.Log(guess[i]) / Constants.ln2);
                     var crossEntropy = logit * expected[i];
                     categoricalCrossEntropy += crossEntropy;
+                    data.i = i;
+                    data.crossEntropy = crossEntropy;
+                    data.logit = logit;
+                    datas.Add(data);
                 }
             }
 
 
-
+            Console.WriteLine(datas);
             return categoricalCrossEntropy;
         }
     }
+
+    #region Debug
+
+    public struct Data
+    {
+        public int i;
+        public float crossEntropy;
+        public float logit;
+    }
+
+    #endregion
 }

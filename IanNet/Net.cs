@@ -13,6 +13,7 @@ using ILGPU;
 using ILGPU.Runtime.OpenCL;
 using IanNet.IanNet.Batch;
 using IanNet.IanNet.Measurement;
+using IanNet.IanNet.Normalizers;
 
 namespace IanNet.IanNet
 {
@@ -27,6 +28,7 @@ namespace IanNet.IanNet
         public List<Layer> Layers;
         public delegate float LossDelegate(Net Net, LabelledBatch<Tuple<object, object>> batch);
         public LossDelegate Loss;
+        public List<INormalizer> Normalizers;
 
         //
         MemoryBuffer2D<float, Stride2D.DenseX> inputBatch;
@@ -35,6 +37,7 @@ namespace IanNet.IanNet
         // history
         public History history;
         public EarlyStopping earlyStopping;
+        public int currentEpoch;
 
         // net things
         public bool Compiled = false;
@@ -44,6 +47,7 @@ namespace IanNet.IanNet
             this.learningRate = learningRate;
             Layers = new List<Layer>();
             history = new History();
+            Normalizers = new List<INormalizer>();
         }
 
         public void AddLayer(Layer layer)
@@ -52,6 +56,19 @@ namespace IanNet.IanNet
                 throw new Exception("This network has already been compiled");
 
             Layers.Add(layer);
+        }
+
+        public void AddNormalizer(INormalizer normalizer)
+        {
+            Normalizers.Add(normalizer);
+        }
+
+        public void Normalize()
+        {
+            if (!Compiled)
+                throw new Exception("This network has not been compiled yet");
+
+            Normalizers.ForEach(n => n.Normalize());
         }
 
         public void Compile(Dictionary<string, string> Options = null)
@@ -87,6 +104,9 @@ namespace IanNet.IanNet
             // compile kernels
             //InitKernels();    // no kernels
 
+            // compile the normalizers
+            Normalizers.ForEach(n => n.Compile(device));
+
             Compiled = true;
         }
 
@@ -115,6 +135,7 @@ namespace IanNet.IanNet
 
         public void Train(object inputs, object target)
         {
+            Console.WriteLine("Train");
             Forward(inputs, returnResult: false);
 
             // run through the layers backwards
@@ -135,13 +156,23 @@ namespace IanNet.IanNet
             if (options == null)
                 options = new TrainingOptions();
 
+            // keep the options object in the history
+            history.TrainingOptions = options;
+
             // keep the history in the event of several calls to Train
-            int currentEpoch;
             if (history.Epochs.Count > 0)
-                currentEpoch = history.Epochs.Last().Number + 1;    // yeah, if the last few epochs weren't recorded, then this'll be off, but who would not make epochs a multiple of step size?
+            {
+                currentEpoch = history.Epochs.Last().Number;    // yeah, if the last few epochs weren't recorded, then this'll be off, but who would not make epochs a multiple of step size?
+            }
             else
-                currentEpoch = 1;
+            {
+                // if the current epoch is zero, slip in an extra history call
+                currentEpoch = 0;
+                TrackHistory(batch, options);
+            }
             
+            currentEpoch++;
+
             for (int epoch = 0; epoch < options.Epochs; epoch++)
             {
                 foreach (var tuple in batch)
@@ -151,20 +182,23 @@ namespace IanNet.IanNet
                 
                 // history
                 if (options.HistoryStepSize > 0 && currentEpoch % options.HistoryStepSize == 0)
-                {
-                    var epochStats = new Epoch() { Number = currentEpoch };
-                    if (options.TrackAccuracy) epochStats.Accuracy = Measurements.GetAccuracy(this, batch);
-                    if (options.TrackLoss) epochStats.Loss = Measurements.GetLoss(this, batch);
-                    if (options.TrackCategoricalCrossEntropy) epochStats.CategoricalCrossEntropy = Measurements.GetCategoricalCrossEntropy(this, batch);
-                    history.Add(epochStats);
-
-                    // early stopping
-                    if (earlyStopping != null && earlyStopping.CheckStop(epochStats))
-                        return;
-                }
+                    TrackHistory(batch, options);
+                
+                // early stopping
+                if (earlyStopping != null && earlyStopping.CheckStop(history.Epochs.Last()))
+                    return;
                 
                 currentEpoch++;
             }
+        }
+
+        public void TrackHistory(LabelledBatch<Tuple<object, object>> batch, TrainingOptions options = null)
+        {
+            var epochStats = new Epoch() { Number = currentEpoch };
+            if (options.TrackAccuracy) epochStats.Accuracy = Measurements.GetAccuracy(this, batch);
+            if (options.TrackLoss) epochStats.Loss = Measurements.GetLoss(this, batch);
+            if (options.TrackCategoricalCrossEntropy) epochStats.CategoricalCrossEntropy = Measurements.GetCategoricalCrossEntropy(this, batch);
+            history.Add(epochStats);
         }
 
         public void LoadInputs(IEnumerable<float[]> items)

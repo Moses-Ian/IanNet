@@ -55,7 +55,7 @@ namespace IanNet.IanNet.Layers
             return inputsBuffer;
         }
 
-        public override MemoryBuffer GetNodesBuffer()
+        public override MemoryBuffer1D<float, Stride1D.Dense> GetNodesBuffer()
         {
             return nodesBuffer;
         }

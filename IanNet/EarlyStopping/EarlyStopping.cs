@@ -28,7 +28,7 @@ namespace IanNet.IanNet
             return ShouldStop.Any(d => d.Invoke(epoch));
         }
 
-        public void AddDelegate(ShouldStopDelegate shouldStopDelegate)
+        public void AddStop(ShouldStopDelegate shouldStopDelegate)
         {
             ShouldStop.Add(shouldStopDelegate);
         }

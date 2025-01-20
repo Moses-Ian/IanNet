@@ -17,6 +17,18 @@ namespace IanNet.IanNet.Kernel
 
         public static void none(Index1D index, ArrayView1D<float, Stride1D.Dense> a, ArrayView1D<float, Stride1D.Dense> b) { }
 
+        public static void resetFlags(Index1D index, ArrayView1D<byte, Stride1D.Dense> flags)
+        {
+            // bytes are faster than floats and bools can't be used
+            flags[index] = 0;
+        }
+
+        public static void setFlags(Index1D index, ArrayView1D<byte, Stride1D.Dense> flags)
+        {
+            // bytes are faster than floats and bools can't be used
+            flags[index] = 1;
+        }
+
         /// <remarks>The inverse of explode1Dto2D</remarks>
         public static void flatten2Dto1D(Index1D index, ArrayView2D<float, Stride2D.DenseX> input, ArrayView1D<float, Stride1D.Dense> output)            // 1D output array
         {

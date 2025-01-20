@@ -135,7 +135,7 @@ namespace IanNet.IanNet.Layers
         public override void BackPropogate()
         {
             // dL/dW = convolution(X, dL/dZ)
-            convolutionKernel(GetIndex2D(errors), inputsBuffer, errorsBuffer, filterGradientBuffer);
+            convolutionKernel(errorsBuffer.IntExtent, inputsBuffer, errorsBuffer, filterGradientBuffer);
             learn2DKernel(filterBuffer.IntExtent, filterGradientBuffer, filterBuffer, LearningRate);
 
             // dL/dB = sum(dL/dZ)
@@ -236,6 +236,18 @@ namespace IanNet.IanNet.Layers
 
         #endregion
 
+        #region
+
+        public void SetFilter(float[,] filter)
+        {
+            if (filter.GetLength(0) != FilterShape.X || filter.GetLength(1) != FilterShape.Y)
+                throw new InvalidDataException($"Filter size is the wrong shape. It should be [{FilterShape.X}, {FilterShape.Y}]");
+            
+            filterBuffer.CopyFromCPU(filter);
+        }
+
+        #endregion
+
         #region Buffers
 
         // buffers
@@ -261,6 +273,11 @@ namespace IanNet.IanNet.Layers
             errorsBuffer = device.Allocate2DDenseX<float>(NodeShape.ToIndex2D());
             biasGradientBuffer1 = device.Allocate2DDenseX<float>(NodeShape.ToIndex2D());
             biasGradientBuffer2 = device.Allocate2DDenseX<float>(NodeShape.ToIndex2D());
+        }
+
+        public MemoryBuffer2D<float, Stride2D.DenseX> GetFilterBuffer()
+        {
+            return filterBuffer;
         }
 
         #endregion

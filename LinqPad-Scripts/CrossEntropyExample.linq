@@ -76,8 +76,8 @@ void Main()
 	};
 	
 	var earlyStopping = new EarlyStopping();
-	earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfLossIsNaN);
-	//earlyStopping.AddDelegate(EarlyStoppingDelegateImplementations.StopIfAccuracyIsHigh(0.99f));
+	earlyStopping.AddStop(Stops.StopIfLossIsNaN);
+	//earlyStopping.AddStop(Stops.StopIfAccuracyIsHigh(0.99f));
 	Net.SetEarlyStopping(earlyStopping);
 	
 	var stopwatch = new Stopwatch();
@@ -153,7 +153,7 @@ public Net MakeTheNetwork()
 	var net = new Net();
 	var learningRate = 0.1f;
 	
-	var inputLayer = new Input1DLayer<Flower>(2);
+	var inputLayer = new Input1D<Flower>(2);
 	inputLayer.SetPreprocess(Preprocess);
 	
 	var denseLayer1 = new Layer1D(2);
@@ -190,7 +190,7 @@ public Net MakeTheNetwork()
 	var softmaxLayer = new Softmax1D();
 	
 	int numberOfLabels = Enum.GetValues(typeof(Species)).Length;
-	var outputLayer = new Output1DLayer<Species>(numberOfLabels);
+	var outputLayer = new Output1D<Species>(numberOfLabels);
 	outputLayer.SetProcessing(new EnumProcessing1D<Species>());
 	
 	net.AddLayer(inputLayer);
