@@ -26,7 +26,7 @@ namespace IanNet.IanNet.Layers
     public partial class Conv2D : Layer2D
     {
         // metadata
-        private readonly string defaultName = "Conv2D";
+        private static readonly string defaultName = "Conv2D";
 
         // gpu things
         //public Accelerator device;

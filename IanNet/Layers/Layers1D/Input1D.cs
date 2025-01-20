@@ -15,7 +15,7 @@ namespace IanNet.IanNet.Layers
         private PreprocessDelegate _Preprocess;
 
         // metadata;
-        private readonly string defaultName = "Input1D";
+        private static readonly string defaultName = "Input1D";
 
         public Input1D(int NumberOfInputs)
             : base(NumberOfInputs)

@@ -17,7 +17,7 @@ namespace IanNet.IanNet.Layers
     public class MaxPooling2D : Layer2D
     {
         // metadata
-        private readonly string defaultName = "MaxPooling2D";
+        private static readonly string defaultName = "MaxPooling2D";
 
         Shape2D FilterShape;
         

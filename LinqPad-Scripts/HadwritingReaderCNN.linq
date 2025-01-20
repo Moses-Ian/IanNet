@@ -146,18 +146,11 @@ void Main()
 	Console.WriteLine("Normalizing...");
 	var normalizer = Net.Normalizers[0] as ShrinkUntilNotNaN;
 	int count = 0;
-	do 
-	{
-		// normalize it
-		Net.Normalize();
-		
-		// prepare for the next iteration
-		Net.Forward(image);
-		
-		Console.WriteLine(++count);
-	}while (normalizer.IsNaN() && count < 30);
 	
-	Console.WriteLine(normalizer.IsNaN());
+	// normalize it
+	Net.Normalize(image);
+		
+	Console.WriteLine(normalizer.IsNormal());
 	
 	result = (Label) Net.Forward(image);
 	Console.WriteLine(result.ToString());
@@ -236,7 +229,7 @@ public Net MakeTheNetwork()
 	
 	// set normalizers
 	net.AddNormalizer(
-		new ShrinkUntilNotNaN(2, 1, convLayer.GetFilterBuffer, softmaxLayer.GetNodesBuffer));
+		new ShrinkUntilNotNaN(convLayer.GetFilterBuffer, softmaxLayer.GetNodesBuffer));
 	
 	return net;
 }
